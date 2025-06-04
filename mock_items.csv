@@ -1,0 +1,26 @@
+name,type,category,branches,floorPrice,highPrice,isHardLiquor
+Margherita Pizza,food,Main Course,tiger_bar_dubai;tiger_bar_abu_dhabi,12.99,15.99,false
+Pepperoni Pizza,food,Main Course,tiger_bar_dubai;tiger_bar_abu_dhabi,14.99,18.99,false
+Caesar Salad,food,Appetizers,tiger_bar_dubai;tiger_bar_abu_dhabi;tiger_bar_airport,8.99,10.99,false
+Greek Salad,food,Appetizers,tiger_bar_dubai;tiger_bar_abu_dhabi,9.99,12.99,false
+Chocolate Cake,food,Desserts,tiger_bar_dubai;tiger_bar_abu_dhabi;tiger_bar_airport,7.99,9.99,false
+Tiramisu,food,Desserts,tiger_bar_dubai;tiger_bar_abu_dhabi,8.99,10.99,false
+French Fries,food,Sides,tiger_bar_dubai;tiger_bar_abu_dhabi;tiger_bar_airport,4.99,6.99,false
+Onion Rings,food,Sides,tiger_bar_dubai;tiger_bar_abu_dhabi,5.99,7.99,false
+Mojito,drinks,Cocktails,tiger_bar_dubai;tiger_bar_abu_dhabi,9.99,12.99,true
+Margarita,drinks,Cocktails,tiger_bar_dubai;tiger_bar_abu_dhabi;tiger_bar_airport,10.99,14.99,true
+Old Fashioned,drinks,Cocktails,tiger_bar_dubai;tiger_bar_abu_dhabi,11.99,15.99,true
+Whiskey Sour,drinks,Cocktails,tiger_bar_dubai;tiger_bar_abu_dhabi,10.99,13.99,true
+Johnnie Walker Black,drinks,Spirits,tiger_bar_dubai;tiger_bar_abu_dhabi;tiger_bar_airport,14.99,19.99,true
+"Jack Daniel's",drinks,Spirits,tiger_bar_dubai;tiger_bar_abu_dhabi,13.99,17.99,true
+Heineken,drinks,Beers,tiger_bar_dubai;tiger_bar_abu_dhabi;tiger_bar_airport,6.99,8.99,true
+Corona,drinks,Beers,tiger_bar_dubai;tiger_bar_abu_dhabi,6.99,8.99,true
+Virgin Mojito,drinks,Mocktails,tiger_bar_dubai;tiger_bar_abu_dhabi;tiger_bar_airport,7.99,9.99,false
+Fruit Punch,drinks,Mocktails,tiger_bar_dubai;tiger_bar_abu_dhabi,7.99,9.99,false
+House Red Wine,drinks,Wines,tiger_bar_dubai;tiger_bar_abu_dhabi,9.99,14.99,true
+House White Wine,drinks,Wines,tiger_bar_dubai;tiger_bar_abu_dhabi,9.99,14.99,true
+Double Apple Sheesha,sheesha,Premium Sheesha,tiger_bar_dubai;tiger_bar_abu_dhabi,24.99,29.99,false
+Mint Sheesha,sheesha,Premium Sheesha,tiger_bar_dubai;tiger_bar_abu_dhabi,24.99,29.99,false
+Blueberry Sheesha,sheesha,Fruit Sheesha,tiger_bar_dubai;tiger_bar_abu_dhabi,26.99,32.99,false
+Mixed Berry Sheesha,sheesha,Fruit Sheesha,tiger_bar_dubai;tiger_bar_abu_dhabi,26.99,32.99,false
+Tiger Special Blend,sheesha,Special Blend Sheesha,tiger_bar_dubai;tiger_bar_abu_dhabi;tiger_bar_airport,34.99,39.99,false

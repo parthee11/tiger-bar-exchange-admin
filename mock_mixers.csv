@@ -1,0 +1,21 @@
+name,price,available
+Coca-Cola,2.50,true
+Diet Coke,2.50,true
+Sprite,2.50,true
+Ginger Ale,2.75,true
+Tonic Water,3.00,true
+Soda Water,2.00,true
+Orange Juice,3.50,true
+Cranberry Juice,3.50,true
+Pineapple Juice,3.75,true
+Tomato Juice,3.25,true
+Lemon Juice,2.25,true
+Lime Juice,2.25,true
+Grenadine,2.00,true
+Simple Syrup,1.75,true
+Angostura Bitters,1.50,true
+Red Bull,4.50,true
+Ginger Beer,3.25,true
+Coconut Water,3.75,false
+Almond Milk,3.50,false
+Lemonade,3.00,true

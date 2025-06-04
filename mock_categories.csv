@@ -1,0 +1,16 @@
+name,type,description
+Appetizers,food,Small dishes served before the main course
+Main Course,food,Primary dishes on the menu
+Desserts,food,Sweet dishes served after the main course
+Sides,food,Complementary dishes to accompany main courses
+Specials,food,Chef's special dishes of the day
+Cocktails,drinks,Mixed alcoholic beverages
+Mocktails,drinks,Non-alcoholic mixed beverages
+Beers,drinks,Various types of beer
+Wines,drinks,Selection of red and white wines
+Spirits,drinks,Hard liquor options
+Soft Drinks,drinks,Non-alcoholic carbonated beverages
+Coffee & Tea,drinks,Hot beverages
+Premium Sheesha,sheesha,High-quality flavored tobacco
+Fruit Sheesha,sheesha,Fruit-flavored tobacco options
+Special Blend Sheesha,sheesha,Unique tobacco blends exclusive to Tiger Bar

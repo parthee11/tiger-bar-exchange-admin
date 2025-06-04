@@ -1,0 +1,1167 @@
+import { useState, useEffect, useRef } from "react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select-advanced";
+import { Plus, Edit, Trash2, Package, Upload, FileUp, X, Check, AlertCircle } from "lucide-react";
+import api from "../api/api";
+import { useConfirmationDialog } from "../components/providers/confirmation-provider";
+
+export function Items() {
+  const [items, setItems] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [branchesState, setBranchesState] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "food",
+    category: "",
+    branches: [],
+    isHardLiquor: false,
+    floorPrice: "",
+    highPrice: ""
+  });
+  const [bulkImportData, setBulkImportData] = useState([]);
+  const [bulkImportStep, setBulkImportStep] = useState(1); // 1: Upload, 2: Review, 3: Success
+  const [bulkImportError, setBulkImportError] = useState(null);
+  const [bulkImportSuccess, setBulkImportSuccess] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef(null);
+  const { openConfirmation } = useConfirmationDialog();
+
+  // Fetch all items, categories, and branches on component mount
+  useEffect(() => {
+    fetchItems();
+    fetchCategories();
+    fetchBranches();
+  }, []);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    try {
+      const data = await api.items.getItems();
+      setItems(data.data || []);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching items:", err);
+      setError("Failed to load items. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await api.categories.getCategories();
+      setCategories(data.data || []);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
+
+  const fetchBranches = async () => {
+    try {
+      const data = await api.branches.getBranches();
+      setBranchesState(data.data || []);
+    } catch (err) {
+      console.error("Error fetching branches:", err);
+    }
+  };
+
+  const handleAddItem = async () => {
+    try {
+      // Validate required fields
+      if (!formData.name || !formData.type || !formData.category || formData.branches.length === 0 || !formData.floorPrice) {
+        setError("Name, type, category, at least one branch, and floor price are required.");
+        return;
+      }
+      
+      const newItemData = {
+        name: formData.name,
+        type: formData.type,
+        category: formData.category,
+        branches: formData.branches,
+        isHardLiquor: formData.isHardLiquor,
+        floorPrice: parseFloat(formData.floorPrice),
+        highPrice: formData.highPrice ? parseFloat(formData.highPrice) : undefined
+      };
+      
+      await api.items.createItem(newItemData);
+      setIsAddModalOpen(false);
+      resetForm();
+      fetchItems();
+      setError(null);
+    } catch (err) {
+      console.error("Error adding item:", err);
+      setError("Failed to add item. Please try again.");
+    }
+  };
+
+  const handleEditItem = async () => {
+    try {
+      // Validate required fields
+      if (!formData.name || !formData.type || !formData.category || formData.branches.length === 0 || !formData.floorPrice) {
+        setError("Name, type, category, at least one branch, and floor price are required.");
+        return;
+      }
+      
+      const updatedItemData = {
+        name: formData.name,
+        type: formData.type,
+        category: formData.category,
+        branches: formData.branches,
+        isHardLiquor: formData.isHardLiquor,
+        floorPrice: parseFloat(formData.floorPrice),
+        highPrice: formData.highPrice ? parseFloat(formData.highPrice) : undefined
+      };
+      
+      await api.items.updateItem(currentItem._id, updatedItemData);
+      setIsEditModalOpen(false);
+      resetForm();
+      fetchItems();
+      setError(null);
+    } catch (err) {
+      console.error("Error updating item:", err);
+      setError("Failed to update item. Please try again.");
+    }
+  };
+
+  const openDeleteModal = (item) => {
+    openConfirmation({
+      title: "Delete Item",
+      message: `Are you sure you want to delete ${item.name}? This action cannot be undone.`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      confirmVariant: "destructive",
+      onConfirm: async () => {
+        try {
+          await api.items.deleteItem(item._id);
+          fetchItems();
+          setError(null);
+        } catch (err) {
+          console.error("Error deleting item:", err);
+          setError("Failed to delete item. Please try again.");
+        }
+      }
+    });
+  };
+
+  const openAddModal = () => {
+    resetForm();
+    setError(null);
+    setIsAddModalOpen(true);
+  };
+
+  const openEditModal = (item) => {
+    setCurrentItem(item);
+    setError(null);
+    setFormData({
+      name: item.name,
+      type: item.type,
+      category: item.category._id || item.category,
+      branches: item.branches.map(branch => typeof branch === 'object' ? branch._id : branch),
+      isHardLiquor: item.isHardLiquor || false,
+      floorPrice: item.floorPrice.toString(),
+      highPrice: item.highPrice ? item.highPrice.toString() : ""
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      type: "food",
+      category: "",
+      branches: [],
+      isHardLiquor: false,
+      floorPrice: "",
+      highPrice: ""
+    });
+    setCurrentItem(null);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
+  const handleTypeChange = (value) => {
+    setFormData({
+      ...formData,
+      type: value
+    });
+  };
+
+  const handleCategoryChange = (value) => {
+    setFormData({
+      ...formData,
+      category: value
+    });
+  };
+
+  const handleBranchChange = (branchId) => {
+    const updatedBranches = formData.branches.includes(branchId)
+      ? formData.branches.filter(id => id !== branchId)
+      : [...formData.branches, branchId];
+    
+    setFormData({
+      ...formData,
+      branches: updatedBranches
+    });
+  };
+
+  const handleCheckboxChange = (checked) => {
+    setFormData({
+      ...formData,
+      isHardLiquor: checked
+    });
+  };
+  
+  // Bulk import functions
+  const openBulkImportModal = () => {
+    setBulkImportStep(1);
+    setBulkImportData([]);
+    setBulkImportError(null);
+    setBulkImportSuccess(null);
+    setIsBulkImportModalOpen(true);
+  };
+  
+  const closeBulkImportModal = () => {
+    setIsBulkImportModalOpen(false);
+    setBulkImportStep(1);
+    setBulkImportData([]);
+    setBulkImportError(null);
+    setBulkImportSuccess(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+  
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Check file type (accept .csv, .json)
+    const fileType = file.name.split('.').pop().toLowerCase();
+    if (fileType !== 'csv' && fileType !== 'json') {
+      setBulkImportError("Please upload a CSV or JSON file");
+      return;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      try {
+        let parsedData = [];
+        
+        if (fileType === 'csv') {
+          // Parse CSV
+          const csvText = event.target.result;
+          const lines = csvText.split('\n');
+          
+          // Check if there's a header row
+          const headerRow = lines[0].split(',');
+          const hasHeader = headerRow.some(header => 
+            header.trim().toLowerCase() === 'name' || 
+            header.trim().toLowerCase() === 'type' || 
+            header.trim().toLowerCase() === 'category'
+          );
+          
+          // Find column indices
+          let nameIndex = 0;
+          let typeIndex = 1;
+          let categoryIndex = 2;
+          let branchesIndex = 3;
+          let floorPriceIndex = 4;
+          let highPriceIndex = 5;
+          let isHardLiquorIndex = 6;
+          
+          if (hasHeader) {
+            headerRow.forEach((header, index) => {
+              const headerText = header.trim().toLowerCase();
+              if (headerText === 'name') nameIndex = index;
+              if (headerText === 'type') typeIndex = index;
+              if (headerText === 'category') categoryIndex = index;
+              if (headerText === 'branches') branchesIndex = index;
+              if (headerText === 'floorprice') floorPriceIndex = index;
+              if (headerText === 'highprice') highPriceIndex = index;
+              if (headerText === 'ishardliquor') isHardLiquorIndex = index;
+            });
+            
+            // Skip header row in processing
+            lines.shift();
+          }
+          
+          // Process data rows
+          lines.forEach(line => {
+            if (!line.trim()) return; // Skip empty lines
+            
+            const values = line.split(',');
+            if (values.length < 5) return; // Need at least name, type, category, branches, floorPrice
+
+            console.log("values >>>", values)
+            
+            const name = values[nameIndex]?.trim();
+            const type = values[typeIndex]?.trim().toLowerCase();
+            const category = values[categoryIndex]?.trim();
+            
+            // Parse branches (comma-separated list in quotes or array notation)
+            let branches = [];
+            if (values[branchesIndex]) {
+              const branchesStr = values[branchesIndex].trim();
+              console.log(branchesStr, "branchesStr")
+              // Try to parse as JSON array if it starts with [ and ends with ]
+              if (branchesStr.startsWith('[') && branchesStr.endsWith(']')) {
+                try {
+                  branches = JSON.parse(branchesStr);
+                } catch (e) {
+                  // If parsing fails, split by semicolon
+                  branches = branchesStr.replace(/[\[\]"']/g, '').split(';').map(b => b.trim()).filter(Boolean);
+                }
+              } else {
+                // Split by semicolon
+                branches = branchesStr.split(';').map(b => b.trim()).filter(Boolean);
+              }
+            }
+
+            console.log(branches, "branches")
+            
+            const floorPriceStr = values[floorPriceIndex]?.trim();
+            const floorPrice = parseFloat(floorPriceStr);
+            
+            // Parse high price (optional)
+            let highPrice = undefined;
+            if (values[highPriceIndex]) {
+              const highPriceStr = values[highPriceIndex].trim();
+              if (highPriceStr) {
+                highPrice = parseFloat(highPriceStr);
+              }
+            }
+            
+            // Parse isHardLiquor (default to false if not specified or invalid)
+            let isHardLiquor = false;
+            if (values[isHardLiquorIndex]) {
+              const isHardLiquorStr = values[isHardLiquorIndex].trim().toLowerCase();
+              if (isHardLiquorStr === 'true' || isHardLiquorStr === 'yes' || isHardLiquorStr === '1') {
+                isHardLiquor = true;
+              }
+            }
+            
+            // Validate required fields and types
+            if (
+              name && 
+              ['food', 'drinks', 'sheesha'].includes(type) && 
+              category && 
+              branches.length > 0 && 
+              !isNaN(floorPrice) && 
+              floorPrice >= 0 && 
+              (highPrice === undefined || (!isNaN(highPrice) && highPrice >= floorPrice))
+            ) {
+              // Find category ID by name if it's not already an ID
+              let categoryId = category;
+              if (!categoryId.match(/^[0-9a-fA-F]{24}$/)) {
+                const foundCategory = categories.find(cat => 
+                  cat.name.toLowerCase() === category.toLowerCase()
+                );
+                if (foundCategory) {
+                  categoryId = foundCategory._id;
+                } else {
+                  // Skip this item if category not found
+                  return;
+                }
+              }
+              
+                parsedData.push({
+                  name,
+                  type,
+                  category: categoryId,
+                  branches,
+                  floorPrice,
+                  highPrice,
+                  isHardLiquor: type === 'drinks' ? isHardLiquor : false
+                });
+            }
+          });
+        } else if (fileType === 'json') {
+          // Parse JSON
+          const jsonData = JSON.parse(event.target.result);
+          
+          const processItem = (item) => {
+            // Validate required fields
+            if (
+              !item.name || 
+              !item.type || 
+              !item.category || 
+              !item.branches || 
+              !Array.isArray(item.branches) || 
+              item.branches.length === 0 || 
+              item.floorPrice === undefined
+            ) {
+              return null;
+            }
+            
+            // Validate types
+            const type = item.type.toLowerCase();
+            if (!['food', 'drinks', 'sheesha'].includes(type)) {
+              return null;
+            }
+            
+            const floorPrice = parseFloat(item.floorPrice);
+            if (isNaN(floorPrice) || floorPrice < 0) {
+              return null;
+            }
+            
+            let highPrice = undefined;
+            if (item.highPrice !== undefined) {
+              highPrice = parseFloat(item.highPrice);
+              if (isNaN(highPrice) || highPrice < floorPrice) {
+                return null;
+              }
+            }
+            
+            // Find category ID by name if it's not already an ID
+            let categoryId = item.category;
+            if (typeof categoryId === 'string' && !categoryId.match(/^[0-9a-fA-F]{24}$/)) {
+              const foundCategory = categories.find(cat => 
+                cat.name.toLowerCase() === item.category.toLowerCase()
+              );
+              if (foundCategory) {
+                categoryId = foundCategory._id;
+              } else {
+                return null;
+              }
+            }
+            
+            // Find branch IDs by name if they're not already IDs
+            const branchIds = item.branches.map(branch => {
+              if (typeof branch === 'string') {
+                if (branch.match(/^[0-9a-fA-F]{24}$/)) {
+                  return branch;
+                } else {
+                  const foundBranch = branchesState.find(b => 
+                    b.name && b.name.toLowerCase() === branch.toLowerCase()
+                  );
+                  return foundBranch ? foundBranch._id : null;
+                }
+              } else if (typeof branch === 'object' && branch._id) {
+                return branch._id;
+              }
+              return null;
+            }).filter(Boolean);
+            
+            if (branchIds.length === 0) {
+              return null;
+            }
+            
+            return {
+              name: item.name,
+              type,
+              category: categoryId,
+              branches: branchIds,
+              floorPrice,
+              highPrice,
+              isHardLiquor: type === 'drinks' ? !!item.isHardLiquor : false
+            };
+          };
+          
+          if (Array.isArray(jsonData)) {
+            // Array of items
+            parsedData = jsonData.map(processItem).filter(Boolean);
+          } else if (jsonData.items && Array.isArray(jsonData.items)) {
+            // Object with items array
+            parsedData = jsonData.items.map(processItem).filter(Boolean);
+          }
+        }
+        
+        if (parsedData.length === 0) {
+          setBulkImportError("No valid item data found in the file. Please check the format.");
+          return;
+        }
+        
+        setBulkImportData(parsedData);
+        setBulkImportStep(2); // Move to review step
+        setBulkImportError(null);
+      } catch (err) {
+        console.error("Error parsing file:", err);
+        setBulkImportError("Failed to parse file. Please check the format.");
+      }
+    };
+    
+    reader.onerror = () => {
+      setBulkImportError("Error reading file. Please try again.");
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  const handleBulkImport = async () => {
+    if (bulkImportData.length === 0) {
+      setBulkImportError("No data to import");
+      return;
+    }
+    
+    setIsImporting(true);
+    setBulkImportError(null);
+    
+    try {
+      const response = await api.items.bulkImportItems(bulkImportData);
+      setBulkImportSuccess(`Successfully imported ${response.data?.imported || bulkImportData.length} items`);
+      setBulkImportStep(3); // Move to success step
+      fetchItems(); // Refresh the items list
+    } catch (err) {
+      console.error("Error importing items:", err);
+      setBulkImportError("Failed to import items. Please try again.");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  // Get item type badge color
+  const getItemTypeColor = (type) => {
+    switch (type) {
+      case 'sheesha':
+        return 'bg-purple-100 text-purple-800';
+      case 'food':
+        return 'bg-green-100 text-green-800';
+      case 'drinks':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // Filter items based on search term
+  const displayItems = items.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.category && typeof item.category === 'object' && item.category.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  // Get category name from ID
+  const getCategoryName = (categoryId) => {
+    const category = categories.find(cat => cat._id === categoryId);
+    return category ? category.name : "Unknown Category";
+  };
+
+  // Format price with currency
+  const formatPrice = (price) => {
+    return price ? `$${parseFloat(price).toFixed(2)}` : "-";
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Items</h1>
+          <p className="text-muted-foreground">
+            Manage your menu items
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-1" 
+            onClick={openBulkImportModal}
+          >
+            <Upload className="h-4 w-4" /> Bulk Import
+          </Button>
+          <Button className="flex items-center gap-1" onClick={openAddModal}>
+            <Plus className="h-4 w-4" /> Add Item
+          </Button>
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-between py-4">
+        <Input
+          placeholder="Search items..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="max-w-sm"
+        />
+        <div className="text-sm text-muted-foreground">
+          {displayItems.length} {displayItems.length === 1 ? 'item' : 'items'} found
+        </div>
+      </div>
+      
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center">
+          <p>Loading items...</p>
+        </div>
+      ) : displayItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-8 text-center">
+          <div className="mb-4 text-gray-400">
+            <Package className="h-12 w-12 mx-auto" />
+          </div>
+          <h3 className="text-lg font-medium">No items found</h3>
+          <p className="text-sm text-gray-500 mt-2">
+            Get started by adding your first item.
+          </p>
+          <Button className="mt-4" onClick={openAddModal}>
+            <Plus className="h-4 w-4 mr-2" /> Add Your First Item
+          </Button>
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <div className="relative w-full overflow-auto">
+            <table className="w-full caption-bottom text-sm">
+              <thead className="[&_tr]:border-b">
+                <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Type</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Category</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Floor Price</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">High Price</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Hard Liquor</th>
+                  <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="[&_tr:last-child]:border-0">
+                {displayItems.map((item) => (
+                  <tr 
+                    key={item._id} 
+                    className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                  >
+                    <td className="p-4 align-middle">{item.name}</td>
+                    <td className="p-4 align-middle">
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        getItemTypeColor(item.type)
+                      }`}>
+                        {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                      </span>
+                    </td>
+                    <td className="p-4 align-middle">
+                      {item.category && typeof item.category === 'object' 
+                        ? item.category.name 
+                        : getCategoryName(item.category)}
+                    </td>
+                    <td className="p-4 align-middle">{formatPrice(item.floorPrice)}</td>
+                    <td className="p-4 align-middle">{formatPrice(item.highPrice)}</td>
+                    <td className="p-4 align-middle">
+                      {item.isHardLiquor ? "Yes" : "No"}
+                    </td>
+                    <td className="p-4 align-middle text-right">
+                      <div className="flex justify-end space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center gap-1"
+                          onClick={() => openEditModal(item)}
+                        >
+                          <Edit className="h-3 w-3" /> Edit
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center gap-1 text-red-500 hover:text-red-700"
+                          onClick={() => openDeleteModal(item)}
+                        >
+                          <Trash2 className="h-3 w-3" /> Delete
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Add Item Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Add New Item</h2>
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Item Name <span className="text-red-500">*</span></label>
+                <Input 
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Enter item name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Type <span className="text-red-500">*</span></label>
+                <Select 
+                  value={formData.type} 
+                  onValueChange={handleTypeChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select item type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="food">Food</SelectItem>
+                    <SelectItem value="drinks">Drinks</SelectItem>
+                    <SelectItem value="sheesha">Sheesha</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Category <span className="text-red-500">*</span></label>
+                <Select 
+                  value={formData.category} 
+                  onValueChange={handleCategoryChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(category => (
+                      <SelectItem key={category._id} value={category._id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Branches <span className="text-red-500">*</span></label>
+                <div className="space-y-2 mt-1 border rounded-md p-3">
+                  {branchesState.map(branch => (
+                    <div key={branch._id} className="flex items-center space-x-2">
+                      <input 
+                        type="checkbox"
+                        id={`branch-${branch._id}`}
+                        checked={formData.branches.includes(branch._id)}
+                        onChange={() => handleBranchChange(branch._id)}
+                        className="mr-2"
+                      />
+                      <label 
+                        htmlFor={`branch-${branch._id}`}
+                        className="text-sm font-medium leading-none"
+                      >
+                        {branch.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Floor Price <span className="text-red-500">*</span></label>
+                <Input 
+                  name="floorPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.floorPrice}
+                  onChange={handleInputChange}
+                  placeholder="Enter floor price"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">High Price</label>
+                <Input 
+                  name="highPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.highPrice}
+                  onChange={handleInputChange}
+                  placeholder="Enter high price (optional)"
+                />
+              </div>
+              {formData.type === 'drinks' && (
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox"
+                    id="isHardLiquor"
+                    checked={formData.isHardLiquor}
+                    onChange={(e) => handleCheckboxChange(e.target.checked)}
+                    className="mr-2"
+                  />
+                  <label 
+                    htmlFor="isHardLiquor"
+                    className="text-sm font-medium leading-none"
+                  >
+                    Is Hard Liquor
+                  </label>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => {
+                setIsAddModalOpen(false);
+                setError(null);
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddItem}>
+                Add Item
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Item Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Edit Item</h2>
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Item Name <span className="text-red-500">*</span></label>
+                <Input 
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Enter item name"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Type <span className="text-red-500">*</span></label>
+                <Select 
+                  value={formData.type} 
+                  onValueChange={handleTypeChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select item type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="food">Food</SelectItem>
+                    <SelectItem value="drinks">Drinks</SelectItem>
+                    <SelectItem value="sheesha">Sheesha</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Category <span className="text-red-500">*</span></label>
+                <Select 
+                  value={formData.category} 
+                  onValueChange={handleCategoryChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(category => (
+                      <SelectItem key={category._id} value={category._id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Branches <span className="text-red-500">*</span></label>
+                <div className="space-y-2 mt-1 border rounded-md p-3">
+                  {branchesState.map(branch => (
+                    <div key={branch._id} className="flex items-center space-x-2">
+                      <input 
+                        type="checkbox"
+                        id={`branch-edit-${branch._id}`}
+                        checked={formData.branches.includes(branch._id)}
+                        onChange={() => handleBranchChange(branch._id)}
+                        className="mr-2"
+                      />
+                      <label 
+                        htmlFor={`branch-edit-${branch._id}`}
+                        className="text-sm font-medium leading-none"
+                      >
+                        {branch.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Floor Price <span className="text-red-500">*</span></label>
+                <Input 
+                  name="floorPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.floorPrice}
+                  onChange={handleInputChange}
+                  placeholder="Enter floor price"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">High Price</label>
+                <Input 
+                  name="highPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.highPrice}
+                  onChange={handleInputChange}
+                  placeholder="Enter high price (optional)"
+                />
+              </div>
+              {formData.type === 'drinks' && (
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox"
+                    id="isHardLiquor-edit"
+                    checked={formData.isHardLiquor}
+                    onChange={(e) => handleCheckboxChange(e.target.checked)}
+                    className="mr-2"
+                  />
+                  <label 
+                    htmlFor="isHardLiquor-edit"
+                    className="text-sm font-medium leading-none"
+                  >
+                    Is Hard Liquor
+                  </label>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button variant="outline" onClick={() => {
+                setIsEditModalOpen(false);
+                setError(null);
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditItem}>
+                Update Item
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {isBulkImportModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">Bulk Import Items</h2>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0" 
+                onClick={closeBulkImportModal}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Step 1: Upload File */}
+            {bulkImportStep === 1 && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded mb-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertCircle className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm">
+                        Upload a CSV or JSON file with item data. The file should contain columns for name, type, category, branches, floorPrice, highPrice (optional), and isHardLiquor (optional).
+                      </p>
+                      <p className="text-sm mt-2">
+                        <strong>Required fields:</strong> name, type, category, branches, floorPrice
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {bulkImportError && (
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <span className="block sm:inline">{bulkImportError}</span>
+                  </div>
+                )}
+                
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                  <FileUp className="h-10 w-10 mx-auto text-gray-400 mb-4" />
+                  <p className="text-sm text-gray-500 mb-4">
+                    Drag and drop your file here, or click to browse
+                  </p>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".csv,.json"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Select File
+                  </Button>
+                  <p className="text-xs text-gray-400 mt-4">
+                    Supported formats: .csv, .json
+                  </p>
+                </div>
+                
+                <div className="mt-4">
+                  <h3 className="font-medium mb-2">Sample CSV Format:</h3>
+                  <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
+                    name,type,category,branches,floorPrice,highPrice,isHardLiquor<br/>
+                    Burger,food,Burgers,branch1;branch2,10.99,15.99,false<br/>
+                    Mojito,drinks,Cocktails,branch1;branch3,8.50,12.00,true<br/>
+                    Apple Flavor,sheesha,Fruit Flavors,branch2;branch3,20.00,,false
+                  </pre>
+                </div>
+                
+                <div className="mt-4">
+                  <h3 className="font-medium mb-2">Sample JSON Format:</h3>
+                  <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
+                    {`[
+  {
+    "name": "Burger",
+    "type": "food",
+    "category": "Burgers",
+    "branches": ["branch1", "branch2"],
+    "floorPrice": 10.99,
+    "highPrice": 15.99
+  },
+  {
+    "name": "Mojito",
+    "type": "drinks",
+    "category": "Cocktails",
+    "branches": ["branch1", "branch3"],
+    "floorPrice": 8.50,
+    "highPrice": 12.00,
+    "isHardLiquor": true
+  }
+]`}
+                  </pre>
+                </div>
+                
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mt-4">
+                  <p className="text-sm">
+                    <strong>Note:</strong> For categories and branches, you can use either IDs or names. If using names, they must match exactly with existing categories and branches in the system.
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Step 2: Review Data */}
+            {bulkImportStep === 2 && (
+              <div className="space-y-4">
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mb-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertCircle className="h-5 w-5 text-yellow-500" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm">
+                        Review the items below before importing. {bulkImportData.length} items found.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {bulkImportError && (
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <span className="block sm:inline">{bulkImportError}</span>
+                  </div>
+                )}
+                
+                <div className="border rounded-md max-h-64 overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left font-medium text-gray-500">Name</th>
+                        <th className="px-4 py-2 text-left font-medium text-gray-500">Type</th>
+                        <th className="px-4 py-2 text-left font-medium text-gray-500">Category</th>
+                        <th className="px-4 py-2 text-left font-medium text-gray-500">Floor Price</th>
+                        <th className="px-4 py-2 text-left font-medium text-gray-500">High Price</th>
+                        <th className="px-4 py-2 text-left font-medium text-gray-500">Hard Liquor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {bulkImportData.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-4 py-2">{item.name}</td>
+                          <td className="px-4 py-2">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              getItemTypeColor(item.type)
+                            }`}>
+                              {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2">
+                            {typeof item.category === 'object' 
+                              ? item.category.name 
+                              : getCategoryName(item.category)}
+                          </td>
+                          <td className="px-4 py-2">{formatPrice(item.floorPrice)}</td>
+                          <td className="px-4 py-2">{formatPrice(item.highPrice)}</td>
+                          <td className="px-4 py-2">{item.isHardLiquor ? "Yes" : "No"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                <div className="flex justify-between mt-6">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setBulkImportStep(1);
+                      setBulkImportError(null);
+                    }}
+                  >
+                    Back
+                  </Button>
+                  <Button 
+                    onClick={handleBulkImport}
+                    disabled={isImporting}
+                  >
+                    {isImporting ? "Importing..." : "Import Items"}
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Step 3: Success */}
+            {bulkImportStep === 3 && (
+              <div className="space-y-4 text-center">
+                <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <Check className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-lg font-medium">Import Successful</h3>
+                <p className="text-gray-500">{bulkImportSuccess}</p>
+                <Button 
+                  className="mt-4" 
+                  onClick={closeBulkImportModal}
+                >
+                  Done
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
