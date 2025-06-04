@@ -93,7 +93,7 @@ export function Sidebar() {
   }
   
   return (
-    <div className="pb-12 w-64 border-r h-screen flex flex-col">
+    <div className="pb-12 w-64 border-r h-screen flex flex-col bg-background">
       <div className="flex items-center justify-between p-4 border-b">
         <h2 className="text-xl font-semibold tracking-tight">
           Tiger Bar Exchange

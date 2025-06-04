@@ -22,10 +22,10 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
   // Fetch branch information when order changes
   useEffect(() => {
     const fetchBranchInfo = async () => {
-      if (order && order.branchId) {
+      if (order && order.branch) {
         try {
           setBranchLoading(true);
-          const response = await branchesApi.getBranch(order.branchId);
+          const response = await branchesApi.getBranch(order.branch);
           setBranchInfo(response.data);
         } catch (error) {
           console.error("Error fetching branch info:", error);
@@ -42,7 +42,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
     if (order && isOpen) {
       fetchBranchInfo();
     }
-  }, [order, order?.branchId, isOpen]);
+  }, [order, isOpen]);
 
   // Format date
   const formatDate = (dateString) => {
@@ -56,7 +56,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
   // Get status badge variant
   const getStatusVariant = (status) => {
     switch (status.toLowerCase()) {
-      case "completed":
+      case "delivered":
         return "success";
       case "pending":
         return "warning";
@@ -70,7 +70,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
   // Get status icon
   const getStatusIcon = (status) => {
     switch (status.toLowerCase()) {
-      case "completed":
+      case "delivered":
         return <Check className="h-4 w-4 mr-1" />;
       case "pending":
         return <Clock className="h-4 w-4 mr-1" />;
@@ -85,15 +85,9 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
   const handleStatusChange = async (newStatus) => {
     try {
       setIsUpdating(true);
-      // Try to use the specific status update endpoint first
-      try {
-        await ordersApi.updateOrderStatus(order._id, newStatus);
-      } catch (statusError) {
-        // Fall back to the general update method if the specific endpoint fails
-        console.warn("Status update endpoint failed, using general update:", statusError);
-        await ordersApi.updateOrder(order._id, { status: newStatus });
-      }
-      onStatusChange(order._id, newStatus);
+      
+      // Let the parent component handle the API call
+      await onStatusChange(order._id, newStatus);
     } catch (error) {
       console.error("Failed to update order status:", error);
     } finally {
@@ -122,9 +116,15 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
         <div className="grid grid-cols-2 gap-4 py-4">
           <div>
             <h3 className="font-medium mb-2">Customer Information</h3>
-            <p><span className="text-muted-foreground">Name:</span> {order.user.name}</p>
-            <p><span className="text-muted-foreground">Username:</span> {order.user.username}</p>
-            <p><span className="text-muted-foreground">Table:</span> {order.tableNumber}</p>
+            {order.user ? (
+              <>
+                <p><span className="text-muted-foreground">Name:</span> {order.user.name || 'N/A'}</p>
+                <p><span className="text-muted-foreground">Username:</span> {order.user.username || 'N/A'}</p>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Customer information not available</p>
+            )}
+            <p><span className="text-muted-foreground">Table:</span> {order.tableNumber || 'N/A'}</p>
             <div className="mt-4">
               <h3 className="font-medium mb-2">Branch Information</h3>
               {branchLoading ? (
@@ -141,7 +141,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  {order.branchId ? "Branch information not available" : "No branch assigned"}
+                  {order.branch ? "Branch information not available" : "No branch assigned"}
                 </p>
               )}
             </div>
@@ -150,13 +150,17 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
             <h3 className="font-medium mb-2">Order Information</h3>
             <p>
               <span className="text-muted-foreground">Status:</span> 
-              <Badge variant={getStatusVariant(order.status)} className="ml-2 inline-flex items-center">
-                {getStatusIcon(order.status)}
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-              </Badge>
+              {order.status ? (
+                <Badge variant={getStatusVariant(order.status)} className="ml-2 inline-flex items-center">
+                  {getStatusIcon(order.status)}
+                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                </Badge>
+              ) : (
+                <span className="ml-2">Unknown</span>
+              )}
             </p>
-            <p><span className="text-muted-foreground">Order ID:</span> {order._id}</p>
-            <p><span className="text-muted-foreground">Total Amount:</span> ${order.totalAmount.toFixed(2)}</p>
+            <p><span className="text-muted-foreground">Order ID:</span> {order._id || 'N/A'}</p>
+            <p><span className="text-muted-foreground">Total Amount:</span> ${(order.totalAmount || 0).toFixed(2)}</p>
           </div>
         </div>
 
@@ -176,31 +180,47 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
                 </tr>
               </thead>
               <tbody>
-                {order.items.map((item, index) => (
-                  <tr key={index} className={index !== order.items.length - 1 ? "border-b" : ""}>
-                    <td className="p-3">{item.item.name.replace(/"/g, '')}</td>
-                    <td className="p-3 capitalize">{item.item.type}</td>
-                    <td className="p-3">{item.quantity}</td>
-                    <td className="p-3">
-                      {item.mixers && item.mixers.length > 0 ? (
-                        <ul className="list-disc list-inside">
-                          {item.mixers.map((mixer, i) => (
-                            <li key={i} className="text-sm">
-                              {mixer.name} x{mixer.quantity}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">No mixers</span>
-                      )}
+                {order.items && order.items.length > 0 ? (
+                  <>
+                    {order.items.map((item, index) => (
+                      <tr key={index} className={index !== order.items.length - 1 ? "border-b" : ""}>
+                        <td className="p-3">
+                          {item.item && item.item.name 
+                            ? item.item.name.replace(/"/g, '') 
+                            : 'Unknown Item'}
+                        </td>
+                        <td className="p-3 capitalize">
+                          {item.item && item.item.type ? item.item.type : 'N/A'}
+                        </td>
+                        <td className="p-3">{item.quantity || 0}</td>
+                        <td className="p-3">
+                          {item.mixers && item.mixers.length > 0 ? (
+                            <ul className="list-disc list-inside">
+                              {item.mixers.map((mixer, i) => (
+                                <li key={i} className="text-sm">
+                                  {mixer && mixer.name ? `${mixer.name} x${mixer.quantity || 1}` : 'Unknown Mixer'}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">No mixers</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right">${(item.price || 0).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                    <tr className="bg-muted/30">
+                      <td colSpan="4" className="p-3 text-right font-medium">Total:</td>
+                      <td className="p-3 text-right font-medium">${(order.totalAmount || 0).toFixed(2)}</td>
+                    </tr>
+                  </>
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="p-4 text-center text-muted-foreground">
+                      No items in this order
                     </td>
-                    <td className="p-3 text-right">${item.price.toFixed(2)}</td>
                   </tr>
-                ))}
-                <tr className="bg-muted/30">
-                  <td colSpan="4" className="p-3 text-right font-medium">Total:</td>
-                  <td className="p-3 text-right font-medium">${order.totalAmount.toFixed(2)}</td>
-                </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -208,26 +228,26 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
 
         <DialogFooter className="flex justify-between items-center">
           <div className="flex gap-2">
-            {order.status !== "completed" && (
+            {order.status !== "delivered" && order.status !== "cancelled" && (
               <Button 
                 variant="success" 
-                onClick={() => handleStatusChange("completed")}
+                onClick={() => handleStatusChange("delivered")}
                 disabled={isUpdating}
               >
-                <Check className="h-4 w-4 mr-1" /> Mark Completed
+                <Check className="h-4 w-4 mr-1" /> {isUpdating ? 'Processing...' : 'Mark Delivered'}
               </Button>
             )}
-            {order.status !== "cancelled" && (
+            {order.status !== "delivered" && order.status !== "cancelled" && (
               <Button 
                 variant="destructive" 
                 onClick={() => handleStatusChange("cancelled")}
                 disabled={isUpdating}
               >
-                <X className="h-4 w-4 mr-1" /> Cancel Order
+                <X className="h-4 w-4 mr-1" /> {isUpdating ? 'Processing...' : 'Cancel Order'}
               </Button>
             )}
           </div>
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose} disabled={isUpdating}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

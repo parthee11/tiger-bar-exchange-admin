@@ -88,6 +88,34 @@ const ordersApi = {
       throw error.response?.data || error.message;
     }
   },
+  
+  /**
+   * Mark an order as delivered
+   * @param {string} id - Order ID
+   * @returns {Promise} - Promise with updated order data
+   */
+  deliverOrder: async (id) => {
+    try {
+      const response = await apiClient.put(`/orders/${id}/status`, { status: "delivered" });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+  
+  /**
+   * Cancel an order
+   * @param {string} id - Order ID
+   * @returns {Promise} - Promise with updated order data
+   */
+  cancelOrder: async (id) => {
+    try {
+      const response = await apiClient.put(`/orders/${id}/cancel`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 
   /**
    * Delete an order

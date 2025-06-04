@@ -7,6 +7,7 @@ import prebookingsApi from './prebookings';
 import loyaltyApi from './loyalty';
 import categoriesApi from './categories';
 import mixersApi from './mixers';
+import settingsApi from './settings';
 
 // Export all API modules
 export {
@@ -19,6 +20,7 @@ export {
   loyaltyApi,
   categoriesApi,
   mixersApi,
+  settingsApi,
 };
 
 // Export a default object with all APIs
@@ -31,6 +33,7 @@ const api = {
   loyalty: loyaltyApi,
   categories: categoriesApi,
   mixers: mixersApi,
+  settings: settingsApi,
 };
 
 export default api;

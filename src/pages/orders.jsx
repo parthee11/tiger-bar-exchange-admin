@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
-import { Eye, Loader2 } from "lucide-react"
+import { Eye, Loader2, RefreshCw, Calendar } from "lucide-react"
 import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 import { Input } from "../components/ui/input"
 import { Select, SelectOption } from "../components/ui/select"
 import ordersApi from "../api/orders"
 import branchesApi from "../api/branches"
-import { format } from "date-fns"
+import { format, isAfter, isBefore, parseISO, startOfDay, endOfDay } from "date-fns"
 import { OrderDetails } from "../components/order-details"
 
 export function Orders() {
@@ -19,35 +19,44 @@ export function Orders() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
   const [branchesLoading, setBranchesLoading] = useState(true);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setBranchesLoading(true);
+      
+      // Fetch orders
+      const ordersResponse = await ordersApi.getAllOrders();
+      setOrders(ordersResponse.data || []);
+      
+      // Fetch branches
+      const branchesResponse = await branchesApi.getBranches();
+      setBranches(branchesResponse.data || []);
+      
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Failed to load data. Please try again later.");
+    } finally {
+      setLoading(false);
+      setBranchesLoading(false);
+    }
+  };
+
+  // Initial data fetch
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setBranchesLoading(true);
-        
-        // Fetch orders
-        const ordersResponse = await ordersApi.getAllOrders();
-        setOrders(ordersResponse.data || []);
-        
-        // Fetch branches
-        const branchesResponse = await branchesApi.getBranches();
-        setBranches(branchesResponse.data || []);
-        
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Failed to load data. Please try again later.");
-      } finally {
-        setLoading(false);
-        setBranchesLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
+  
+  // Function to refresh orders data
+  const handleRefresh = () => {
+    fetchData();
+  };
 
   // Format date from ISO string
   const formatDate = (dateString) => {
@@ -61,7 +70,7 @@ export function Orders() {
   // Get status badge variant based on status
   const getStatusVariant = (status) => {
     switch (status.toLowerCase()) {
-      case "completed":
+      case "delivered":
         return "success";
       case "pending":
         return "warning";
@@ -77,7 +86,7 @@ export function Orders() {
     return items.reduce((total, item) => total + item.quantity, 0);
   };
 
-  // Filter orders based on search term and branch
+  // Filter orders based on search term, branch, status, and date range
   const filteredOrders = orders.filter(order => {
     // Search filter
     const matchesSearch = searchTerm === "" || 
@@ -88,7 +97,25 @@ export function Orders() {
     // Branch filter
     const matchesBranch = selectedBranch === "" || order.branch === selectedBranch;
     
-    return matchesSearch && matchesBranch;
+    // Status filter
+    const matchesStatus = selectedStatus === "" || 
+      (order.status && order.status.toLowerCase() === selectedStatus.toLowerCase());
+    
+    // Date filter
+    let matchesDateRange = true;
+    if (startDate && order.createdAt) {
+      const orderDate = parseISO(order.createdAt);
+      const filterStartDate = startOfDay(parseISO(startDate));
+      matchesDateRange = isAfter(orderDate, filterStartDate) || orderDate.getTime() === filterStartDate.getTime();
+    }
+    
+    if (endDate && order.createdAt && matchesDateRange) {
+      const orderDate = parseISO(order.createdAt);
+      const filterEndDate = endOfDay(parseISO(endDate));
+      matchesDateRange = isBefore(orderDate, filterEndDate) || orderDate.getTime() === filterEndDate.getTime();
+    }
+    
+    return matchesSearch && matchesBranch && matchesStatus && matchesDateRange;
   });
   
   // Handle opening order details
@@ -98,15 +125,33 @@ export function Orders() {
   };
   
   // Handle order status change
-  const handleOrderStatusChange = (orderId, newStatus) => {
-    setOrders(orders.map(order => 
-      order._id === orderId 
-        ? { ...order, status: newStatus } 
-        : order
-    ));
-    
-    if (selectedOrder && selectedOrder._id === orderId) {
-      setSelectedOrder({ ...selectedOrder, status: newStatus });
+  const handleOrderStatusChange = async (orderId, newStatus) => {
+    try {
+      // Update the order status in the API using the appropriate endpoint
+      if (newStatus === "delivered") {
+        await ordersApi.deliverOrder(orderId);
+      } else if (newStatus === "cancelled") {
+        await ordersApi.cancelOrder(orderId);
+      } else {
+        await ordersApi.updateOrderStatus(orderId, newStatus);
+      }
+      
+      // Update local state
+      setOrders(orders.map(order => 
+        order._id === orderId 
+          ? { ...order, status: newStatus } 
+          : order
+      ));
+      
+      if (selectedOrder && selectedOrder._id === orderId) {
+        setSelectedOrder({ ...selectedOrder, status: newStatus });
+      }
+      
+      return true; // Return a resolved promise for the OrderDetails component to await
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      // You could add a toast notification here for error feedback
+      throw error; // Re-throw the error so the OrderDetails component can catch it
     }
   };
 
@@ -142,18 +187,60 @@ export function Orders() {
             ))}
           </Select>
         </div>
+        <div className="w-[150px]">
+          <Select 
+            value={selectedStatus} 
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="w-full"
+          >
+            <SelectOption value="">All Statuses</SelectOption>
+            <SelectOption value="pending">Pending</SelectOption>
+            <SelectOption value="delivered">Delivered</SelectOption>
+            <SelectOption value="cancelled">Cancelled</SelectOption>
+          </Select>
+        </div>
         <div>
-          {(searchTerm || selectedBranch) && (
+          {(searchTerm || selectedBranch || selectedStatus || startDate || endDate) && (
             <Button 
               variant="outline" 
               onClick={() => {
                 setSearchTerm("");
                 setSelectedBranch("");
+                setSelectedStatus("");
+                setStartDate("");
+                setEndDate("");
               }}
             >
               Clear Filters
             </Button>
           )}
+        </div>
+      </div>
+      
+      <div className="flex flex-col sm:flex-row gap-4 items-center">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Date Range:</span>
+        </div>
+        <div className="flex gap-2 items-center">
+          <div>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <span className="text-sm text-muted-foreground">to</span>
+          <div>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full"
+              min={startDate}
+            />
+          </div>
         </div>
       </div>
       
@@ -165,15 +252,33 @@ export function Orders() {
               View and manage customer orders
             </CardDescription>
           </div>
-          {!loading && (searchTerm || selectedBranch) && (
-            <div className="text-sm text-muted-foreground">
-              Showing {filteredOrders.length} of {orders.length} orders
-              {searchTerm && <span> (filtered by search)</span>}
-              {selectedBranch && (
-                <span> (filtered by branch: {branches.find(b => b._id === selectedBranch)?.name || 'Unknown'})</span>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {!loading && (searchTerm || selectedBranch || selectedStatus || startDate || endDate) && (
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredOrders.length} of {orders.length} orders
+                {searchTerm && <span> (filtered by search)</span>}
+                {selectedBranch && (
+                  <span> (filtered by branch: {branches.find(b => b._id === selectedBranch)?.name || 'Unknown'})</span>
+                )}
+                {selectedStatus && (
+                  <span> (filtered by status: {selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)})</span>
+                )}
+                {(startDate || endDate) && (
+                  <span> (filtered by date: {startDate ? format(parseISO(startDate), 'MMM d, yyyy') : 'any'} to {endDate ? format(parseISO(endDate), 'MMM d, yyyy') : 'any'})</span>
+                )}
+              </div>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} /> 
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (

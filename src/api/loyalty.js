@@ -5,13 +5,12 @@ import apiClient from './index';
  */
 const loyaltyApi = {
   /**
-   * Get all loyalty programs
-   * @param {Object} params - Query parameters
-   * @returns {Promise} - Promise with loyalty programs data
+   * Get loyalty program status
+   * @returns {Promise} - Promise with loyalty program status
    */
-  getLoyaltyPrograms: async (params = {}) => {
+  getLoyaltyStatus: async () => {
     try {
-      const response = await apiClient.get('/loyalty/programs', { params });
+      const response = await apiClient.get('/loyalty/status');
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -19,13 +18,13 @@ const loyaltyApi = {
   },
 
   /**
-   * Get loyalty program by ID
-   * @param {string} id - Loyalty program ID
-   * @returns {Promise} - Promise with loyalty program data
+   * Update loyalty program status (enable/disable)
+   * @param {boolean} enabled - Whether the loyalty program is enabled
+   * @returns {Promise} - Promise with updated status
    */
-  getLoyaltyProgram: async (id) => {
+  updateLoyaltyStatus: async (enabled) => {
     try {
-      const response = await apiClient.get(`/loyalty/programs/${id}`);
+      const response = await apiClient.put('/loyalty/status', { enabled });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -33,56 +32,19 @@ const loyaltyApi = {
   },
 
   /**
-   * Create a new loyalty program
-   * @param {Object} programData - Loyalty program data
-   * @returns {Promise} - Promise with created loyalty program data
-   */
-  createLoyaltyProgram: async (programData) => {
-    try {
-      const response = await apiClient.post('/loyalty/programs', programData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  /**
-   * Update a loyalty program
-   * @param {string} id - Loyalty program ID
-   * @param {Object} programData - Loyalty program data to update
-   * @returns {Promise} - Promise with updated loyalty program data
-   */
-  updateLoyaltyProgram: async (id, programData) => {
-    try {
-      const response = await apiClient.put(`/loyalty/programs/${id}`, programData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  /**
-   * Delete a loyalty program
-   * @param {string} id - Loyalty program ID
-   * @returns {Promise} - Promise with success status
-   */
-  deleteLoyaltyProgram: async (id) => {
-    try {
-      const response = await apiClient.delete(`/loyalty/programs/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  /**
-   * Get all loyalty customers
+   * Get all loyalty customers (users with loyalty points)
    * @param {Object} params - Query parameters
    * @returns {Promise} - Promise with loyalty customers data
    */
   getLoyaltyCustomers: async (params = {}) => {
     try {
-      const response = await apiClient.get('/loyalty/customers', { params });
+      // Use the admin users endpoint to get users with loyalty information
+      const response = await apiClient.get('/admin/users', { 
+        params: { 
+          ...params,
+          role: 'user' // Filter to only get regular users
+        } 
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -96,7 +58,7 @@ const loyaltyApi = {
    */
   getLoyaltyCustomer: async (id) => {
     try {
-      const response = await apiClient.get(`/loyalty/customers/${id}`);
+      const response = await apiClient.get(`/admin/users/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -111,7 +73,14 @@ const loyaltyApi = {
    */
   addPoints: async (customerId, pointsData) => {
     try {
-      const response = await apiClient.post(`/loyalty/customers/${customerId}/points/add`, pointsData);
+      // Use the exact format required by the API
+      const requestBody = {
+        points: pointsData.amount,
+        operation: 'add',
+        reason: pointsData.reason || 'Admin adjustment'
+      };
+      
+      const response = await apiClient.put(`/admin/users/${customerId}/loyalty`, requestBody);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -126,7 +95,13 @@ const loyaltyApi = {
    */
   redeemPoints: async (customerId, redeemData) => {
     try {
-      const response = await apiClient.post(`/loyalty/customers/${customerId}/points/redeem`, redeemData);
+      const requestBody = {
+        points: redeemData.amount,
+        operation: 'redeem',
+        reason: redeemData.reason || 'Points redemption'
+      };
+      
+      const response = await apiClient.put(`/admin/users/${customerId}/loyalty`, requestBody);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -145,7 +120,7 @@ const loyaltyApi = {
     } catch (error) {
       throw error.response?.data || error.message;
     }
-  },
+  }
 };
 
 export default loyaltyApi;
