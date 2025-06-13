@@ -1,6 +1,14 @@
 import { Navigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { useAuth } from '../contexts/auth-context';
 
+/**
+ * ProtectedRoute component that redirects to sign-in if user is not authenticated
+ * 
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render when authenticated
+ * @returns {React.ReactElement} Protected route component
+ */
 export function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
@@ -21,3 +29,8 @@ export function ProtectedRoute({ children }) {
   // Render children if authenticated
   return children;
 }
+
+// Add PropTypes for type checking
+ProtectedRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+};

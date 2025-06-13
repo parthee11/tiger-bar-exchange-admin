@@ -52,6 +52,8 @@ const ordersApi = {
    */
   createOrder: async (orderData) => {
     try {
+      // The loyalty percentage will be applied on the server side
+      // based on the settings configured in the admin panel
       const response = await apiClient.post('/orders', orderData);
       return response.data;
     } catch (error) {

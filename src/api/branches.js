@@ -74,6 +74,53 @@ const branchesApi = {
       throw error.response?.data || error.message;
     }
   },
+
+  /**
+   * Trigger a market crash for a branch
+   * @param {string} id - Branch ID
+   * @param {number} crashPercentage - Percentage to reduce prices by (0-90)
+   * @param {number} durationMinutes - Duration in minutes after which the crash will automatically end (1-120)
+   * @returns {Promise} - Promise with market crash result
+   */
+  triggerMarketCrash: async (id, crashPercentage = 50, durationMinutes = 15) => {
+    try {
+      const response = await apiClient.put(`/branches/${id}/market-crash`, { 
+        crashPercentage,
+        durationMinutes
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  /**
+   * End a market crash for a branch
+   * @param {string} id - Branch ID
+   * @returns {Promise} - Promise with market crash end result
+   */
+  endMarketCrash: async (id) => {
+    try {
+      const response = await apiClient.put(`/branches/${id}/market-crash/end`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  /**
+   * Get market crash history for a branch
+   * @param {string} id - Branch ID
+   * @returns {Promise} - Promise with market crash history
+   */
+  getMarketCrashHistory: async (id) => {
+    try {
+      const response = await apiClient.get(`/branches/${id}/market-crash/history`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };
 
 export default branchesApi;

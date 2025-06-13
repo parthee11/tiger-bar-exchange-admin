@@ -11,7 +11,7 @@ const prebookingsApi = {
    */
   getPrebookings: async (params = {}) => {
     try {
-      const response = await apiClient.get('/prebookings', { params });
+      const response = await apiClient.get('/pre-bookings', { params });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -25,7 +25,7 @@ const prebookingsApi = {
    */
   getPrebooking: async (id) => {
     try {
-      const response = await apiClient.get(`/prebookings/${id}`);
+      const response = await apiClient.get(`/pre-bookings/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -39,7 +39,7 @@ const prebookingsApi = {
    */
   createPrebooking: async (prebookingData) => {
     try {
-      const response = await apiClient.post('/prebookings', prebookingData);
+      const response = await apiClient.post('/pre-bookings', prebookingData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -54,7 +54,7 @@ const prebookingsApi = {
    */
   updatePrebooking: async (id, prebookingData) => {
     try {
-      const response = await apiClient.put(`/prebookings/${id}`, prebookingData);
+      const response = await apiClient.put(`/pre-bookings/${id}`, prebookingData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -68,7 +68,7 @@ const prebookingsApi = {
    */
   deletePrebooking: async (id) => {
     try {
-      const response = await apiClient.delete(`/prebookings/${id}`);
+      const response = await apiClient.delete(`/pre-bookings/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -82,7 +82,9 @@ const prebookingsApi = {
    */
   confirmPrebooking: async (id) => {
     try {
-      const response = await apiClient.post(`/prebookings/${id}/confirm`);
+      const response = await apiClient.put(`/pre-bookings/${id}/status`, {
+        status: 'confirmed'
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -97,7 +99,7 @@ const prebookingsApi = {
    */
   cancelPrebooking: async (id, cancelData = {}) => {
     try {
-      const response = await apiClient.post(`/prebookings/${id}/cancel`, cancelData);
+      const response = await apiClient.put(`/pre-bookings/${id}/cancel`, cancelData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

@@ -1,13 +1,21 @@
-import { useState } from "react"
-import { Sidebar } from "../components/sidebar"
-import { Menu, X } from "lucide-react"
-import { Button } from "../components/ui/button"
+import { useState } from 'react';
+import PropTypes from 'prop-types';
+import { Sidebar } from '../components/sidebar';
+import { Menu, X } from 'lucide-react';
+import { Button } from '../components/ui/button';
 
+/**
+ * DashboardLayout component that provides a layout with sidebar for dashboard pages
+ * 
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render in the main content area
+ * @returns {React.ReactElement} Dashboard layout component
+ */
 export function DashboardLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen">
       {/* Mobile sidebar toggle */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <Button 
@@ -21,14 +29,14 @@ export function DashboardLayout({ children }) {
       
       {/* Sidebar */}
       <div className={`
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} 
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
         fixed inset-y-0 z-40 lg:static lg:translate-x-0 transition-transform duration-200 ease-in-out
       `}>
         <Sidebar />
       </div>
       
       {/* Main content */}
-      <main className="flex-1 p-6 lg:p-8 overflow-auto">
+      <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
         {children}
       </main>
       
@@ -40,5 +48,10 @@ export function DashboardLayout({ children }) {
         />
       )}
     </div>
-  )
+  );
 }
+
+// Add PropTypes for type checking
+DashboardLayout.propTypes = {
+  children: PropTypes.node.isRequired,
+};

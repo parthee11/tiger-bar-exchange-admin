@@ -1,106 +1,139 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { cn } from '../lib/utils'
-import { 
-  LayoutDashboard, 
-  Package, 
-  TrendingDown, 
-  ShoppingCart, 
-  Calendar, 
-  Store, 
-  Users, 
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { cn } from '../lib/utils';
+import {
+  LayoutDashboard,
+  Package,
+  TrendingDown,
+  ShoppingCart,
+  Calendar,
+  Store,
+  Users,
   Settings,
   LogOut,
   Tag,
-  Wine
-} from 'lucide-react'
-import { ThemeToggle } from './theme-toggle'
-import { Button } from './ui/button'
-import { useAuth } from '../contexts/auth-context'
+  Wine,
+  Table,
+} from 'lucide-react';
+import { ThemeToggle } from './theme-toggle';
+import { Button } from './ui/button';
+import { useAuth } from '../contexts/auth-context';
+import { useState, useEffect } from 'react';
+import tigerLogoDark from '../assets/images/TIGER LOGO - DARK.png';
+import tigerLogoWhite from '../assets/images/TIGER LOGO - WHITE.png';
 
 const navItems = [
   {
-    title: "Dashboard",
-    href: "/",
+    title: 'Dashboard',
+    href: '/',
     icon: LayoutDashboard,
-    description: "Total orders, top items, crashes, live stats"
+    description: 'Total orders, top items, crashes, live stats',
   },
   {
-    title: "Branches",
-    href: "/branches",
+    title: 'Branches',
+    href: '/branches',
     icon: Store,
-    description: "Manage business branches (name, address, contact)"
+    description: 'Manage business branches (name, address, contact)',
   },
   {
-    title: "Categories",
-    href: "/categories",
+    title: 'Tables',
+    href: '/tables',
+    icon: Table,
+    description: 'Manage tables, status (available, reserved, occupied)',
+  },
+  {
+    title: 'Categories',
+    href: '/categories',
     icon: Tag,
-    description: "Manage product categories"
+    description: 'Manage product categories',
   },
   {
-    title: "Manage Items",
-    href: "/items",
+    title: 'Manage Items',
+    href: '/items',
     icon: Package,
-    description: "Add/edit items, floor/base price, demand tracking"
+    description: 'Add/edit items, floor/base price, demand tracking',
   },
   {
-    title: "Manage Mixers",
-    href: "/mixers",
+    title: 'Manage Mixers',
+    href: '/mixers',
     icon: Wine,
-    description: "Add/edit mixers for drinks"
+    description: 'Add/edit mixers for drinks',
   },
   {
-    title: "Orders",
-    href: "/orders",
+    title: 'Orders',
+    href: '/orders',
     icon: ShoppingCart,
-    description: "View all orders by outlet/time"
+    description: 'View all orders by outlet/time',
   },
-  /* Commented out as requested
   {
-    title: "Prebookings",
-    href: "/prebookings",
+    title: 'Reservations',
+    href: '/prebookings',
     icon: Calendar,
-    description: "View pending/active prebookings"
+    description: 'Manage table reservations and prebookings',
   },
   {
-    title: "Market Crash",
-    href: "/market-crash",
+    title: 'Market Crash',
+    href: '/market-crash',
     icon: TrendingDown,
-    description: "Trigger crash, timer, view logs"
+    description: 'Trigger crash, timer, view logs',
   },
-  */
   {
-    title: "Loyalty Settings",
-    href: "/loyalty",
+    title: 'Loyalty Program',
+    href: '/loyalty',
     icon: Users,
-    description: "View users, assign manual rewards if needed"
+    description: 'View users, assign manual rewards if needed',
   },
-  // {
-  //   title: "Settings",
-  //   href: "/settings",
-  //   icon: Settings,
-  //   description: "Admin login/logout, token refresh, roles"
-  // }
-]
+];
 
 export function Sidebar() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { user, signOut } = useAuth()
-  
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const [currentTheme, setCurrentTheme] = useState('light');
+
+  useEffect(() => {
+    // Get initial theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setCurrentTheme(savedTheme);
+
+    // Listen for theme changes
+    const handleStorageChange = () => {
+      const theme = localStorage.getItem('theme') || 'light';
+      setCurrentTheme(theme);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Custom event listener for theme changes within the same window
+    const handleThemeChange = (e) => {
+      setCurrentTheme(e.detail.theme);
+    };
+
+    window.addEventListener('themeChange', handleThemeChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('themeChange', handleThemeChange);
+    };
+  }, []);
+
   const handleLogout = () => {
-    signOut()
-    navigate('/sign-in')
-  }
-  
+    signOut();
+    navigate('/sign-in');
+  };
+
   return (
-    <div className="pb-12 w-64 border-r h-screen flex flex-col bg-background">
+    <div className="pb-12 w-64 border-r h-screen flex flex-col bg-background sticky top-0">
       <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-xl font-semibold tracking-tight">
-          Tiger Bar Exchange
-        </h2>
+        <div className="flex items-center">
+          <img
+            src={currentTheme === 'dark' ? tigerLogoWhite : tigerLogoDark}
+            alt="Tiger Bar Exchange Logo"
+            className="h-[100px] w-auto"
+          />
+        </div>
         <ThemeToggle />
       </div>
-      
+
       <div className="flex-1 overflow-auto py-4">
         <nav className="px-4 py-2">
           <div className="space-y-1">
@@ -109,10 +142,10 @@ export function Sidebar() {
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary",
-                  location.pathname === item.href 
-                    ? "bg-accent text-accent-foreground" 
-                    : "text-muted-foreground"
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary',
+                  location.pathname === item.href
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground',
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -122,7 +155,7 @@ export function Sidebar() {
           </div>
         </nav>
       </div>
-      
+
       <div className="mt-auto p-4 border-t">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
@@ -133,9 +166,9 @@ export function Sidebar() {
             <p className="text-xs text-muted-foreground">{user?.email || 'admin@tigerbar.com'}</p>
           </div>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           className="w-full flex items-center gap-2 mt-2"
           onClick={handleLogout}
         >
@@ -143,5 +176,5 @@ export function Sidebar() {
         </Button>
       </div>
     </div>
-  )
+  );
 }

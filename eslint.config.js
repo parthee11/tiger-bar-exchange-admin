@@ -9,7 +9,10 @@ export default [
     files: ['**/*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.es2020
+      },
       parserOptions: {
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },
@@ -23,11 +26,37 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      
+      // Variables
+      'no-unused-vars': ['error', { 
+        varsIgnorePattern: '^[A-Z_]',
+        argsIgnorePattern: '^_',
+        ignoreRestSiblings: true
+      }],
+      'no-var': 'error',
+      'prefer-const': 'error',
+      
+      // Code style
+      'no-multiple-empty-lines': ['error', { max: 1, maxEOF: 1 }],
+      'no-trailing-spaces': 'error',
+      'eol-last': ['error', 'always'],
+      'arrow-body-style': ['error', 'as-needed'],
+      'arrow-parens': ['error', 'always'],
+      'comma-dangle': ['error', 'always-multiline'],
+      'quotes': ['error', 'single', { avoidEscape: true }],
+      'semi': ['error', 'always'],
+      
+      // React
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
       ],
+      'react-hooks/exhaustive-deps': 'warn',
+      
+      // Complexity
+      'max-depth': ['warn', 4],
+      'max-lines-per-function': ['warn', { max: 100, skipBlankLines: true, skipComments: true }],
+      'complexity': ['warn', 10],
     },
   },
 ]

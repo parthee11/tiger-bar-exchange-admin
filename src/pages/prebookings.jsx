@@ -1,82 +1,172 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
-import { Calendar, Filter } from "lucide-react"
-import { Button } from "../components/ui/button"
-
-const prebookings = [
-  { id: "PB-001", customer: "Corporate Event Inc.", outlet: "Downtown", date: "2023-06-15", time: "19:00", guests: 25, status: "Pending" },
-  { id: "PB-002", customer: "Birthday Party", outlet: "Uptown", date: "2023-06-18", time: "20:30", guests: 12, status: "Confirmed" },
-  { id: "PB-003", customer: "Team Outing", outlet: "Riverside", date: "2023-06-20", time: "18:00", guests: 15, status: "Confirmed" },
-  { id: "PB-004", customer: "Anniversary", outlet: "Downtown", date: "2023-06-25", time: "19:30", guests: 2, status: "Pending" },
-  { id: "PB-005", customer: "Graduation Party", outlet: "Uptown", date: "2023-06-30", time: "21:00", guests: 20, status: "Confirmed" },
-]
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Calendar, Loader2 } from "lucide-react";
+import { Button } from "../components/ui/button";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import prebookingsApi from "../api/prebookings";
+import { useToast } from "../components/ui/use-toast";
+import { FilterBar } from "../components/reservations/filter-bar";
+import { ReservationTable } from "../components/reservations/reservation-table";
+import { ConfirmationModal } from "../components/ui/confirmation-modal";
 
 export function Prebookings() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [prebookings, setPrebookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'confirmed', 'cancelled'
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
+
+  // Fetch prebookings on component mount
+  useEffect(() => {
+    fetchPrebookings();
+  }, []);
+
+  // Fetch prebookings from API
+  const fetchPrebookings = async () => {
+    setLoading(true);
+    try {
+      const response = await prebookingsApi.getPrebookings();
+      if (response.success && response.data) {
+        setPrebookings(response.data);
+      } else {
+        setError('Failed to load reservations');
+        toast({
+          title: "Error",
+          description: "Failed to load reservations",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching reservations:', error);
+      setError('Failed to load reservations');
+      toast({
+        title: "Error",
+        description: "Failed to load reservations",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Open confirmation modal
+  const openConfirmModal = (id) => {
+    setSelectedBookingId(id);
+    setConfirmModalOpen(true);
+  };
+
+  // Handle prebooking confirmation
+  const handleConfirmPrebooking = async () => {
+    if (!selectedBookingId) return;
+    
+    try {
+      const response = await prebookingsApi.confirmPrebooking(selectedBookingId);
+      if (response.success) {
+        // Refresh the prebookings list
+        fetchPrebookings();
+        toast({
+          title: "Success",
+          description: "Reservation confirmed successfully",
+          variant: "success",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to confirm reservation",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error confirming reservation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to confirm reservation",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle filter change
+  const handleFilterChange = (newFilter) => {
+    setFilter(newFilter);
+  };
+
+  // Navigate to prebooking detail page
+  const handleViewPrebooking = (id) => {
+    navigate(`/prebooking-detail/${id}`);
+  };
+
+  // Filter prebookings based on status
+  const filteredPrebookings = filter === 'all' 
+    ? prebookings 
+    : prebookings.filter(booking => booking.status && booking.status.toLowerCase() === filter);
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Prebookings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Reservations</h1>
         <p className="text-muted-foreground">
-          View pending/active prebookings
+          View and manage table reservations
         </p>
       </div>
       
       <Card>
         <CardHeader className="flex flex-row items-center">
           <div>
-            <CardTitle>Upcoming Prebookings</CardTitle>
+            <CardTitle>Upcoming Reservations</CardTitle>
             <CardDescription>
-              Manage reservations and special events
+              Manage table reservations and special events
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" className="ml-auto flex items-center gap-1">
-            <Filter className="h-4 w-4" /> Filter
-          </Button>
+          <div className="ml-auto">
+            <FilterBar 
+              filter={filter} 
+              onFilterChange={handleFilterChange} 
+              onRefresh={fetchPrebookings} 
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50 text-sm">
-                  <th className="p-3 text-left font-medium">Booking ID</th>
-                  <th className="p-3 text-left font-medium">Customer</th>
-                  <th className="p-3 text-left font-medium">Outlet</th>
-                  <th className="p-3 text-left font-medium">Date</th>
-                  <th className="p-3 text-left font-medium">Time</th>
-                  <th className="p-3 text-left font-medium">Guests</th>
-                  <th className="p-3 text-left font-medium">Status</th>
-                  <th className="p-3 text-left font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {prebookings.map((booking) => (
-                  <tr key={booking.id} className="border-b">
-                    <td className="p-3 font-medium">{booking.id}</td>
-                    <td className="p-3">{booking.customer}</td>
-                    <td className="p-3">{booking.outlet}</td>
-                    <td className="p-3">{booking.date}</td>
-                    <td className="p-3">{booking.time}</td>
-                    <td className="p-3">{booking.guests}</td>
-                    <td className="p-3">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        booking.status === "Confirmed" 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}>
-                        {booking.status}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <Button variant="outline" size="sm">
-                        {booking.status === "Pending" ? "Confirm" : "View"}
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Loading reservations...</span>
+            </div>
+          ) : error ? (
+            <div className="rounded-md bg-red-50 p-4 text-red-800">
+              <p>{error}</p>
+              <Button variant="outline" size="sm" className="mt-2" onClick={fetchPrebookings}>
+                Try Again
+              </Button>
+            </div>
+          ) : prebookings.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+              <p>No reservations found</p>
+            </div>
+          ) : (
+            <ReservationTable 
+              reservations={filteredPrebookings} 
+              onConfirm={openConfirmModal}
+              onView={handleViewPrebooking}
+            />
+          )}
         </CardContent>
       </Card>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        onConfirm={handleConfirmPrebooking}
+        title="Confirm Reservation"
+        message="Are you sure you want to confirm this reservation? This action cannot be undone."
+        confirmText="Confirm"
+        confirmVariant="success"
+      />
     </div>
-  )
+  );
 }

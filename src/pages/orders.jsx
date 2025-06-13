@@ -1,14 +1,13 @@
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
-import { Eye, Loader2, RefreshCw, Calendar } from "lucide-react"
-import { Button } from "../components/ui/button"
-import { Badge } from "../components/ui/badge"
-import { Input } from "../components/ui/input"
-import { Select, SelectOption } from "../components/ui/select"
-import ordersApi from "../api/orders"
-import branchesApi from "../api/branches"
-import { format, isAfter, isBefore, parseISO, startOfDay, endOfDay } from "date-fns"
-import { OrderDetails } from "../components/order-details"
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { OrderDetails } from "../components/order-details";
+import { OrderFilters } from "../components/orders/order-filters";
+import { OrderTable } from "../components/orders/order-table";
+import { FilterSummary } from "../components/orders/filter-summary";
+import { useToast } from "../components/ui/use-toast";
+import ordersApi from "../api/orders";
+import branchesApi from "../api/branches";
+import { format, isAfter, isBefore, parseISO, startOfDay, endOfDay } from "date-fns";
 
 export function Orders() {
   const [orders, setOrders] = useState([]);
@@ -23,7 +22,7 @@ export function Orders() {
   const [branchesLoading, setBranchesLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
+  const { toast } = useToast();
 
   const fetchData = async () => {
     try {
@@ -39,9 +38,25 @@ export function Orders() {
       setBranches(branchesResponse.data || []);
       
       setError(null);
+      
+      // Show success toast on refresh
+      if (!loading) {
+        toast({
+          title: "Data Refreshed",
+          description: "Orders data has been updated",
+          variant: "default",
+        });
+      }
     } catch (err) {
       console.error("Error fetching data:", err);
       setError("Failed to load data. Please try again later.");
+      
+      // Show error toast
+      toast({
+        title: "Error",
+        description: "Failed to load orders data. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
       setBranchesLoading(false);
@@ -84,6 +99,21 @@ export function Orders() {
   // Calculate total items in an order
   const getTotalItems = (items) => {
     return items.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedBranch("");
+    setSelectedStatus("");
+    setStartDate("");
+    setEndDate("");
+    
+    toast({
+      title: "Filters Cleared",
+      description: "All filters have been reset",
+      variant: "default",
+    });
   };
 
   // Filter orders based on search term, branch, status, and date range
@@ -147,13 +177,15 @@ export function Orders() {
         setSelectedOrder({ ...selectedOrder, status: newStatus });
       }
       
-      return true; // Return a resolved promise for the OrderDetails component to await
+      return true;
     } catch (error) {
       console.error("Failed to update order status:", error);
-      // You could add a toast notification here for error feedback
-      throw error; // Re-throw the error so the OrderDetails component can catch it
+      throw error;
     }
   };
+
+  // Check if any filters are active
+  const hasActiveFilters = searchTerm || selectedBranch || selectedStatus || startDate || endDate;
 
   return (
     <div className="space-y-6">
@@ -164,85 +196,22 @@ export function Orders() {
         </p>
       </div>
       
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <Input 
-            placeholder="Search by customer name, order ID or table..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="w-[200px]">
-          <Select 
-            value={selectedBranch} 
-            onChange={(e) => setSelectedBranch(e.target.value)}
-            disabled={branchesLoading}
-            className="w-full"
-          >
-            <SelectOption value="">All Branches</SelectOption>
-            {branches.map(branch => (
-              <SelectOption key={branch._id} value={branch._id}>
-                {branch.name}
-              </SelectOption>
-            ))}
-          </Select>
-        </div>
-        <div className="w-[150px]">
-          <Select 
-            value={selectedStatus} 
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full"
-          >
-            <SelectOption value="">All Statuses</SelectOption>
-            <SelectOption value="pending">Pending</SelectOption>
-            <SelectOption value="delivered">Delivered</SelectOption>
-            <SelectOption value="cancelled">Cancelled</SelectOption>
-          </Select>
-        </div>
-        <div>
-          {(searchTerm || selectedBranch || selectedStatus || startDate || endDate) && (
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedBranch("");
-                setSelectedStatus("");
-                setStartDate("");
-                setEndDate("");
-              }}
-            >
-              Clear Filters
-            </Button>
-          )}
-        </div>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row gap-4 items-center">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Date Range:</span>
-        </div>
-        <div className="flex gap-2 items-center">
-          <div>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          <span className="text-sm text-muted-foreground">to</span>
-          <div>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full"
-              min={startDate}
-            />
-          </div>
-        </div>
-      </div>
+      <OrderFilters
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedBranch={selectedBranch}
+        setSelectedBranch={setSelectedBranch}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
+        branches={branches}
+        branchesLoading={branchesLoading}
+        clearFilters={clearFilters}
+        hasActiveFilters={hasActiveFilters}
+      />
       
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -252,107 +221,33 @@ export function Orders() {
               View and manage customer orders
             </CardDescription>
           </div>
-          <div className="flex items-center gap-4">
-            {!loading && (searchTerm || selectedBranch || selectedStatus || startDate || endDate) && (
-              <div className="text-sm text-muted-foreground">
-                Showing {filteredOrders.length} of {orders.length} orders
-                {searchTerm && <span> (filtered by search)</span>}
-                {selectedBranch && (
-                  <span> (filtered by branch: {branches.find(b => b._id === selectedBranch)?.name || 'Unknown'})</span>
-                )}
-                {selectedStatus && (
-                  <span> (filtered by status: {selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)})</span>
-                )}
-                {(startDate || endDate) && (
-                  <span> (filtered by date: {startDate ? format(parseISO(startDate), 'MMM d, yyyy') : 'any'} to {endDate ? format(parseISO(endDate), 'MMM d, yyyy') : 'any'})</span>
-                )}
-              </div>
-            )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-1"
-              onClick={handleRefresh}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} /> 
-              Refresh
-            </Button>
-          </div>
+          <FilterSummary
+            loading={loading}
+            searchTerm={searchTerm}
+            selectedBranch={selectedBranch}
+            selectedStatus={selectedStatus}
+            startDate={startDate}
+            endDate={endDate}
+            filteredOrders={filteredOrders}
+            orders={orders}
+            branches={branches}
+            handleRefresh={handleRefresh}
+          />
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-2">Loading orders...</span>
-            </div>
-          ) : error ? (
-            <div className="text-center py-8 text-destructive">
-              {error}
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-muted/50 text-sm">
-                    <th className="p-3 text-left font-medium">Order ID</th>
-                    <th className="p-3 text-left font-medium">Table</th>
-                    <th className="p-3 text-left font-medium">Customer</th>
-                    <th className="p-3 text-left font-medium">Branch</th>
-                    <th className="p-3 text-left font-medium">Items</th>
-                    <th className="p-3 text-left font-medium">Total</th>
-                    <th className="p-3 text-left font-medium">Status</th>
-                    <th className="p-3 text-left font-medium">Date & Time</th>
-                    <th className="p-3 text-left font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan="8" className="p-4 text-center text-muted-foreground">
-                        No orders found
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredOrders.map((order) => (
-                      <tr key={order._id} className="border-b">
-                        <td className="p-3 font-medium">{order._id.substring(order._id.length - 8)}</td>
-                        <td className="p-3">Table {order.tableNumber}</td>
-                        <td className="p-3">{order.user.name}</td>
-                        <td className="p-3">
-                          {order.branch ? 
-                            branches.find(b => b._id === order.branch)?.name || 'Unknown' : 
-                            'Not assigned'}
-                        </td>
-                        <td className="p-3">{getTotalItems(order.items)}</td>
-                        <td className="p-3">${order.totalAmount.toFixed(2)}</td>
-                        <td className="p-3">
-                          <Badge variant={getStatusVariant(order.status)}>
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                          </Badge>
-                        </td>
-                        <td className="p-3">{formatDate(order.createdAt)}</td>
-                        <td className="p-3">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="flex items-center gap-1"
-                            onClick={() => handleViewOrder(order)}
-                          >
-                            <Eye className="h-3 w-3" /> View
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <OrderTable
+            loading={loading}
+            error={error}
+            filteredOrders={filteredOrders}
+            branches={branches}
+            handleViewOrder={handleViewOrder}
+            getStatusVariant={getStatusVariant}
+            formatDate={formatDate}
+            getTotalItems={getTotalItems}
+          />
         </CardContent>
       </Card>
       
-      {/* Order Details Dialog */}
       <OrderDetails 
         order={selectedOrder}
         isOpen={isDetailsOpen}
@@ -360,5 +255,5 @@ export function Orders() {
         onStatusChange={handleOrderStatusChange}
       />
     </div>
-  )
+  );
 }

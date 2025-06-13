@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select-advanced";
-import { Plus, Edit, Trash2, Package, Upload, FileUp, X, Check, AlertCircle } from "lucide-react";
+import { Plus, Package, Upload, FileUp, X, Check, AlertCircle } from "lucide-react";
 import api from "../api/api";
 import { useConfirmationDialog } from "../components/providers/confirmation-provider";
+import { useToast } from "../components/ui/use-toast";
+import { ItemTable } from "../components/items/ItemTable";
+import { ItemModal } from "../components/items/ItemModal";
+import { ItemTypeTag } from "../components/items/ItemTypeTag";
 
 export function Items() {
   const [items, setItems] = useState([]);
@@ -23,8 +26,7 @@ export function Items() {
     category: "",
     branches: [],
     isHardLiquor: false,
-    floorPrice: "",
-    highPrice: ""
+    floorPrice: ""
   });
   const [bulkImportData, setBulkImportData] = useState([]);
   const [bulkImportStep, setBulkImportStep] = useState(1); // 1: Upload, 2: Review, 3: Success
@@ -33,6 +35,7 @@ export function Items() {
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef(null);
   const { openConfirmation } = useConfirmationDialog();
+  const { toast } = useToast();
 
   // Fetch all items, categories, and branches on component mount
   useEffect(() => {
@@ -87,8 +90,7 @@ export function Items() {
         category: formData.category,
         branches: formData.branches,
         isHardLiquor: formData.isHardLiquor,
-        floorPrice: parseFloat(formData.floorPrice),
-        highPrice: formData.highPrice ? parseFloat(formData.highPrice) : undefined
+        floorPrice: parseFloat(formData.floorPrice)
       };
       
       await api.items.createItem(newItemData);
@@ -96,9 +98,21 @@ export function Items() {
       resetForm();
       fetchItems();
       setError(null);
+      
+      toast({
+        title: "Item Added",
+        description: `${newItemData.name} has been added successfully.`,
+        variant: "success",
+      });
     } catch (err) {
       console.error("Error adding item:", err);
       setError("Failed to add item. Please try again.");
+      
+      toast({
+        title: "Error",
+        description: "Failed to add item. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -116,8 +130,7 @@ export function Items() {
         category: formData.category,
         branches: formData.branches,
         isHardLiquor: formData.isHardLiquor,
-        floorPrice: parseFloat(formData.floorPrice),
-        highPrice: formData.highPrice ? parseFloat(formData.highPrice) : undefined
+        floorPrice: parseFloat(formData.floorPrice)
       };
       
       await api.items.updateItem(currentItem._id, updatedItemData);
@@ -125,9 +138,21 @@ export function Items() {
       resetForm();
       fetchItems();
       setError(null);
+      
+      toast({
+        title: "Item Updated",
+        description: `${updatedItemData.name} has been updated successfully.`,
+        variant: "success",
+      });
     } catch (err) {
       console.error("Error updating item:", err);
       setError("Failed to update item. Please try again.");
+      
+      toast({
+        title: "Error",
+        description: "Failed to update item. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -143,9 +168,21 @@ export function Items() {
           await api.items.deleteItem(item._id);
           fetchItems();
           setError(null);
+          
+          toast({
+            title: "Item Deleted",
+            description: `${item.name} has been deleted successfully.`,
+            variant: "success",
+          });
         } catch (err) {
           console.error("Error deleting item:", err);
           setError("Failed to delete item. Please try again.");
+          
+          toast({
+            title: "Error",
+            description: "Failed to delete item. Please try again.",
+            variant: "destructive",
+          });
         }
       }
     });
@@ -166,8 +203,7 @@ export function Items() {
       category: item.category._id || item.category,
       branches: item.branches.map(branch => typeof branch === 'object' ? branch._id : branch),
       isHardLiquor: item.isHardLiquor || false,
-      floorPrice: item.floorPrice.toString(),
-      highPrice: item.highPrice ? item.highPrice.toString() : ""
+      floorPrice: item.floorPrice.toString()
     });
     setIsEditModalOpen(true);
   };
@@ -179,8 +215,7 @@ export function Items() {
       category: "",
       branches: [],
       isHardLiquor: false,
-      floorPrice: "",
-      highPrice: ""
+      floorPrice: ""
     });
     setCurrentItem(null);
   };
@@ -281,8 +316,7 @@ export function Items() {
           let categoryIndex = 2;
           let branchesIndex = 3;
           let floorPriceIndex = 4;
-          let highPriceIndex = 5;
-          let isHardLiquorIndex = 6;
+          let isHardLiquorIndex = 5;
           
           if (hasHeader) {
             headerRow.forEach((header, index) => {
@@ -292,7 +326,6 @@ export function Items() {
               if (headerText === 'category') categoryIndex = index;
               if (headerText === 'branches') branchesIndex = index;
               if (headerText === 'floorprice') floorPriceIndex = index;
-              if (headerText === 'highprice') highPriceIndex = index;
               if (headerText === 'ishardliquor') isHardLiquorIndex = index;
             });
             
@@ -306,8 +339,6 @@ export function Items() {
             
             const values = line.split(',');
             if (values.length < 5) return; // Need at least name, type, category, branches, floorPrice
-
-            console.log("values >>>", values)
             
             const name = values[nameIndex]?.trim();
             const type = values[typeIndex]?.trim().toLowerCase();
@@ -317,7 +348,6 @@ export function Items() {
             let branches = [];
             if (values[branchesIndex]) {
               const branchesStr = values[branchesIndex].trim();
-              console.log(branchesStr, "branchesStr")
               // Try to parse as JSON array if it starts with [ and ends with ]
               if (branchesStr.startsWith('[') && branchesStr.endsWith(']')) {
                 try {
@@ -331,20 +361,9 @@ export function Items() {
                 branches = branchesStr.split(';').map(b => b.trim()).filter(Boolean);
               }
             }
-
-            console.log(branches, "branches")
             
             const floorPriceStr = values[floorPriceIndex]?.trim();
             const floorPrice = parseFloat(floorPriceStr);
-            
-            // Parse high price (optional)
-            let highPrice = undefined;
-            if (values[highPriceIndex]) {
-              const highPriceStr = values[highPriceIndex].trim();
-              if (highPriceStr) {
-                highPrice = parseFloat(highPriceStr);
-              }
-            }
             
             // Parse isHardLiquor (default to false if not specified or invalid)
             let isHardLiquor = false;
@@ -362,8 +381,7 @@ export function Items() {
               category && 
               branches.length > 0 && 
               !isNaN(floorPrice) && 
-              floorPrice >= 0 && 
-              (highPrice === undefined || (!isNaN(highPrice) && highPrice >= floorPrice))
+              floorPrice >= 0
             ) {
               // Find category ID by name if it's not already an ID
               let categoryId = category;
@@ -385,7 +403,6 @@ export function Items() {
                   category: categoryId,
                   branches,
                   floorPrice,
-                  highPrice,
                   isHardLiquor: type === 'drinks' ? isHardLiquor : false
                 });
             }
@@ -417,14 +434,6 @@ export function Items() {
             const floorPrice = parseFloat(item.floorPrice);
             if (isNaN(floorPrice) || floorPrice < 0) {
               return null;
-            }
-            
-            let highPrice = undefined;
-            if (item.highPrice !== undefined) {
-              highPrice = parseFloat(item.highPrice);
-              if (isNaN(highPrice) || highPrice < floorPrice) {
-                return null;
-              }
             }
             
             // Find category ID by name if it's not already an ID
@@ -467,7 +476,6 @@ export function Items() {
               category: categoryId,
               branches: branchIds,
               floorPrice,
-              highPrice,
               isHardLiquor: type === 'drinks' ? !!item.isHardLiquor : false
             };
           };
@@ -513,12 +521,25 @@ export function Items() {
     
     try {
       const response = await api.items.bulkImportItems(bulkImportData);
-      setBulkImportSuccess(`Successfully imported ${response.data?.imported || bulkImportData.length} items`);
+      const importedCount = response.data?.imported || bulkImportData.length;
+      setBulkImportSuccess(`Successfully imported ${importedCount} items`);
       setBulkImportStep(3); // Move to success step
       fetchItems(); // Refresh the items list
+      
+      toast({
+        title: "Bulk Import Successful",
+        description: `Successfully imported ${importedCount} items.`,
+        variant: "success",
+      });
     } catch (err) {
       console.error("Error importing items:", err);
       setBulkImportError("Failed to import items. Please try again.");
+      
+      toast({
+        title: "Bulk Import Failed",
+        description: "Failed to import items. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsImporting(false);
     }
@@ -556,9 +577,9 @@ export function Items() {
     return category ? category.name : "Unknown Category";
   };
 
-  // Format price with currency
+  // Format price with currency (AED - Dirhams)
   const formatPrice = (price) => {
-    return price ? `$${parseFloat(price).toFixed(2)}` : "-";
+    return price ? `${parseFloat(price).toFixed(2)} AED` : "-";
   };
 
   return (
@@ -620,341 +641,56 @@ export function Items() {
           </Button>
         </div>
       ) : (
-        <div className="rounded-md border">
-          <div className="relative w-full overflow-auto">
-            <table className="w-full caption-bottom text-sm">
-              <thead className="[&_tr]:border-b">
-                <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Name</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Type</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Category</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Floor Price</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">High Price</th>
-                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Hard Liquor</th>
-                  <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="[&_tr:last-child]:border-0">
-                {displayItems.map((item) => (
-                  <tr 
-                    key={item._id} 
-                    className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
-                  >
-                    <td className="p-4 align-middle">{item.name}</td>
-                    <td className="p-4 align-middle">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        getItemTypeColor(item.type)
-                      }`}>
-                        {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                      </span>
-                    </td>
-                    <td className="p-4 align-middle">
-                      {item.category && typeof item.category === 'object' 
-                        ? item.category.name 
-                        : getCategoryName(item.category)}
-                    </td>
-                    <td className="p-4 align-middle">{formatPrice(item.floorPrice)}</td>
-                    <td className="p-4 align-middle">{formatPrice(item.highPrice)}</td>
-                    <td className="p-4 align-middle">
-                      {item.isHardLiquor ? "Yes" : "No"}
-                    </td>
-                    <td className="p-4 align-middle text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex items-center gap-1"
-                          onClick={() => openEditModal(item)}
-                        >
-                          <Edit className="h-3 w-3" /> Edit
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex items-center gap-1 text-red-500 hover:text-red-700"
-                          onClick={() => openDeleteModal(item)}
-                        >
-                          <Trash2 className="h-3 w-3" /> Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <ItemTable 
+          items={displayItems}
+          onEdit={openEditModal}
+          onDelete={openDeleteModal}
+          getCategoryName={getCategoryName}
+          formatPrice={formatPrice}
+        />
       )}
 
       {/* Add Item Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Add New Item</h2>
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                <span className="block sm:inline">{error}</span>
-              </div>
-            )}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Item Name <span className="text-red-500">*</span></label>
-                <Input 
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Enter item name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Type <span className="text-red-500">*</span></label>
-                <Select 
-                  value={formData.type} 
-                  onValueChange={handleTypeChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select item type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="food">Food</SelectItem>
-                    <SelectItem value="drinks">Drinks</SelectItem>
-                    <SelectItem value="sheesha">Sheesha</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Category <span className="text-red-500">*</span></label>
-                <Select 
-                  value={formData.category} 
-                  onValueChange={handleCategoryChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category._id} value={category._id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Branches <span className="text-red-500">*</span></label>
-                <div className="space-y-2 mt-1 border rounded-md p-3">
-                  {branchesState.map(branch => (
-                    <div key={branch._id} className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox"
-                        id={`branch-${branch._id}`}
-                        checked={formData.branches.includes(branch._id)}
-                        onChange={() => handleBranchChange(branch._id)}
-                        className="mr-2"
-                      />
-                      <label 
-                        htmlFor={`branch-${branch._id}`}
-                        className="text-sm font-medium leading-none"
-                      >
-                        {branch.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Floor Price <span className="text-red-500">*</span></label>
-                <Input 
-                  name="floorPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.floorPrice}
-                  onChange={handleInputChange}
-                  placeholder="Enter floor price"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">High Price</label>
-                <Input 
-                  name="highPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.highPrice}
-                  onChange={handleInputChange}
-                  placeholder="Enter high price (optional)"
-                />
-              </div>
-              {formData.type === 'drinks' && (
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox"
-                    id="isHardLiquor"
-                    checked={formData.isHardLiquor}
-                    onChange={(e) => handleCheckboxChange(e.target.checked)}
-                    className="mr-2"
-                  />
-                  <label 
-                    htmlFor="isHardLiquor"
-                    className="text-sm font-medium leading-none"
-                  >
-                    Is Hard Liquor
-                  </label>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end space-x-2 mt-6">
-              <Button variant="outline" onClick={() => {
-                setIsAddModalOpen(false);
-                setError(null);
-              }}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddItem}>
-                Add Item
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ItemModal 
+        isOpen={isAddModalOpen}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setError(null);
+        }}
+        onSubmit={handleAddItem}
+        title="Add New Item"
+        submitText="Add Item"
+        formData={formData}
+        handleInputChange={handleInputChange}
+        handleTypeChange={handleTypeChange}
+        handleCategoryChange={handleCategoryChange}
+        handleBranchChange={handleBranchChange}
+        handleCheckboxChange={handleCheckboxChange}
+        categories={categories}
+        branches={branchesState}
+        error={error}
+      />
 
       {/* Edit Item Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Edit Item</h2>
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                <span className="block sm:inline">{error}</span>
-              </div>
-            )}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Item Name <span className="text-red-500">*</span></label>
-                <Input 
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Enter item name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Type <span className="text-red-500">*</span></label>
-                <Select 
-                  value={formData.type} 
-                  onValueChange={handleTypeChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select item type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="food">Food</SelectItem>
-                    <SelectItem value="drinks">Drinks</SelectItem>
-                    <SelectItem value="sheesha">Sheesha</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Category <span className="text-red-500">*</span></label>
-                <Select 
-                  value={formData.category} 
-                  onValueChange={handleCategoryChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category._id} value={category._id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Branches <span className="text-red-500">*</span></label>
-                <div className="space-y-2 mt-1 border rounded-md p-3">
-                  {branchesState.map(branch => (
-                    <div key={branch._id} className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox"
-                        id={`branch-edit-${branch._id}`}
-                        checked={formData.branches.includes(branch._id)}
-                        onChange={() => handleBranchChange(branch._id)}
-                        className="mr-2"
-                      />
-                      <label 
-                        htmlFor={`branch-edit-${branch._id}`}
-                        className="text-sm font-medium leading-none"
-                      >
-                        {branch.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Floor Price <span className="text-red-500">*</span></label>
-                <Input 
-                  name="floorPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.floorPrice}
-                  onChange={handleInputChange}
-                  placeholder="Enter floor price"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">High Price</label>
-                <Input 
-                  name="highPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.highPrice}
-                  onChange={handleInputChange}
-                  placeholder="Enter high price (optional)"
-                />
-              </div>
-              {formData.type === 'drinks' && (
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox"
-                    id="isHardLiquor-edit"
-                    checked={formData.isHardLiquor}
-                    onChange={(e) => handleCheckboxChange(e.target.checked)}
-                    className="mr-2"
-                  />
-                  <label 
-                    htmlFor="isHardLiquor-edit"
-                    className="text-sm font-medium leading-none"
-                  >
-                    Is Hard Liquor
-                  </label>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end space-x-2 mt-6">
-              <Button variant="outline" onClick={() => {
-                setIsEditModalOpen(false);
-                setError(null);
-              }}>
-                Cancel
-              </Button>
-              <Button onClick={handleEditItem}>
-                Update Item
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ItemModal 
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setError(null);
+        }}
+        onSubmit={handleEditItem}
+        title="Edit Item"
+        submitText="Update Item"
+        formData={formData}
+        handleInputChange={handleInputChange}
+        handleTypeChange={handleTypeChange}
+        handleCategoryChange={handleCategoryChange}
+        handleBranchChange={handleBranchChange}
+        handleCheckboxChange={handleCheckboxChange}
+        categories={categories}
+        branches={branchesState}
+        error={error}
+      />
 
       {/* Bulk Import Modal */}
       {isBulkImportModalOpen && (
@@ -967,6 +703,8 @@ export function Items() {
                 size="sm" 
                 className="h-8 w-8 p-0" 
                 onClick={closeBulkImportModal}
+                type="button"
+                aria-label="Close"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -982,7 +720,7 @@ export function Items() {
                     </div>
                     <div className="ml-3">
                       <p className="text-sm">
-                        Upload a CSV or JSON file with item data. The file should contain columns for name, type, category, branches, floorPrice, highPrice (optional), and isHardLiquor (optional).
+                        Upload a CSV or JSON file with item data. The file should contain columns for name, type, category, branches, floorPrice, and isHardLiquor (optional).
                       </p>
                       <p className="text-sm mt-2">
                         <strong>Required fields:</strong> name, type, category, branches, floorPrice
@@ -1024,10 +762,10 @@ export function Items() {
                 <div className="mt-4">
                   <h3 className="font-medium mb-2">Sample CSV Format:</h3>
                   <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
-                    name,type,category,branches,floorPrice,highPrice,isHardLiquor<br/>
-                    Burger,food,Burgers,branch1;branch2,10.99,15.99,false<br/>
-                    Mojito,drinks,Cocktails,branch1;branch3,8.50,12.00,true<br/>
-                    Apple Flavor,sheesha,Fruit Flavors,branch2;branch3,20.00,,false
+                    name,type,category,branches,floorPrice,isHardLiquor<br/>
+                    Burger,food,Burgers,branch1;branch2,10.99,false<br/>
+                    Mojito,drinks,Cocktails,branch1;branch3,8.50,true<br/>
+                    Apple Flavor,sheesha,Fruit Flavors,branch2;branch3,20.00,false
                   </pre>
                 </div>
                 
@@ -1040,8 +778,7 @@ export function Items() {
     "type": "food",
     "category": "Burgers",
     "branches": ["branch1", "branch2"],
-    "floorPrice": 10.99,
-    "highPrice": 15.99
+    "floorPrice": 10.99
   },
   {
     "name": "Mojito",
@@ -1049,7 +786,6 @@ export function Items() {
     "category": "Cocktails",
     "branches": ["branch1", "branch3"],
     "floorPrice": 8.50,
-    "highPrice": 12.00,
     "isHardLiquor": true
   }
 ]`}
@@ -1094,7 +830,6 @@ export function Items() {
                         <th className="px-4 py-2 text-left font-medium text-gray-500">Type</th>
                         <th className="px-4 py-2 text-left font-medium text-gray-500">Category</th>
                         <th className="px-4 py-2 text-left font-medium text-gray-500">Floor Price</th>
-                        <th className="px-4 py-2 text-left font-medium text-gray-500">High Price</th>
                         <th className="px-4 py-2 text-left font-medium text-gray-500">Hard Liquor</th>
                       </tr>
                     </thead>
@@ -1115,7 +850,6 @@ export function Items() {
                               : getCategoryName(item.category)}
                           </td>
                           <td className="px-4 py-2">{formatPrice(item.floorPrice)}</td>
-                          <td className="px-4 py-2">{formatPrice(item.highPrice)}</td>
                           <td className="px-4 py-2">{item.isHardLiquor ? "Yes" : "No"}</td>
                         </tr>
                       ))}

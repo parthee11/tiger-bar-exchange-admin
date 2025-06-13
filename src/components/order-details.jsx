@@ -5,19 +5,21 @@ import {
   DialogHeader, 
   DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogClose
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { format } from "date-fns";
 import { X, Check, Clock, AlertTriangle, MapPin } from "lucide-react";
-import ordersApi from "../api/orders";
 import branchesApi from "../api/branches";
+import { useToast } from "./ui/use-toast";
 
 export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [branchInfo, setBranchInfo] = useState(null);
   const [branchLoading, setBranchLoading] = useState(false);
+  const { toast } = useToast();
   
   // Fetch branch information when order changes
   useEffect(() => {
@@ -88,8 +90,22 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
       
       // Let the parent component handle the API call
       await onStatusChange(order._id, newStatus);
+      
+      // Show success toast
+      toast({
+        title: "Order Updated",
+        description: `Order status changed to ${newStatus}`,
+        variant: "success",
+      });
     } catch (error) {
       console.error("Failed to update order status:", error);
+      
+      // Show error toast
+      toast({
+        title: "Update Failed",
+        description: "Failed to update order status. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -101,6 +117,11 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl">
+        <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </DialogClose>
+        
         <DialogHeader>
           <DialogTitle className="text-xl">
             Order Details
@@ -113,7 +134,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-4 py-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
           <div>
             <h3 className="font-medium mb-2">Customer Information</h3>
             {order.user ? (
@@ -160,7 +181,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
               )}
             </p>
             <p><span className="text-muted-foreground">Order ID:</span> {order._id || 'N/A'}</p>
-            <p><span className="text-muted-foreground">Total Amount:</span> ${(order.totalAmount || 0).toFixed(2)}</p>
+            <p><span className="text-muted-foreground">Total Amount:</span> {(order.totalAmount || 0).toFixed(2)} AED</p>
           </div>
         </div>
 
@@ -168,7 +189,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
           <div className="bg-muted/50 p-3 border-b">
             <h3 className="font-medium">Order Items</h3>
           </div>
-          <div className="p-0">
+          <div className="p-0 overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b text-sm">
@@ -206,12 +227,12 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
                             <span className="text-muted-foreground text-sm">No mixers</span>
                           )}
                         </td>
-                        <td className="p-3 text-right">${(item.price || 0).toFixed(2)}</td>
+                        <td className="p-3 text-right">{(item.price || 0).toFixed(2)} AED</td>
                       </tr>
                     ))}
                     <tr className="bg-muted/30">
                       <td colSpan="4" className="p-3 text-right font-medium">Total:</td>
-                      <td className="p-3 text-right font-medium">${(order.totalAmount || 0).toFixed(2)}</td>
+                      <td className="p-3 text-right font-medium">{(order.totalAmount || 0).toFixed(2)} AED</td>
                     </tr>
                   </>
                 ) : (
@@ -226,7 +247,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange }) {
           </div>
         </div>
 
-        <DialogFooter className="flex justify-between items-center">
+        <DialogFooter className="flex flex-col sm:flex-row justify-between items-center gap-2">
           <div className="flex gap-2">
             {order.status !== "delivered" && order.status !== "cancelled" && (
               <Button 
