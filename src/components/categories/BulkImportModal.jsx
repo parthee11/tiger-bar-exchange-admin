@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { Button } from "../ui/button";
-import { Modal } from "../ui/Modal";
+import { Modal } from "../ui/modal";
 import { AlertCircle, FileUp, Check } from "lucide-react";
 
 /**
