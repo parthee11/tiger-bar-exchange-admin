@@ -109,7 +109,10 @@ export function TVScreen() {
   // Refresh data for the selected branch
   const refreshData = useCallback(async (branchId) => {
     // Skip if the branch ID is the same as the last refresh
-    if (branchId === currentBranchIdRef.current && initialDataLoadedRef.current) {
+    if (
+      branchId === currentBranchIdRef.current &&
+      initialDataLoadedRef.current
+    ) {
       return;
     }
 
@@ -121,9 +124,11 @@ export function TVScreen() {
       if (branch) {
         setSelectedBranch((prevBranch) => {
           // Only update if the branch has changed or market crash status changed
-          if (!prevBranch ||
-              prevBranch._id !== branch._id ||
-              prevBranch.marketCrashActive !== branch.marketCrashActive) {
+          if (
+            !prevBranch ||
+            prevBranch._id !== branch._id ||
+            prevBranch.marketCrashActive !== branch.marketCrashActive
+          ) {
             return branch;
           }
           return prevBranch;
@@ -143,7 +148,9 @@ export function TVScreen() {
       setDarkMode(savedDarkMode === 'true');
     } else {
       // Check if user prefers dark mode based on system preference
-      const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const prefersDarkMode =
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
       setDarkMode(prefersDarkMode);
     }
   }, []);
@@ -424,38 +431,48 @@ export function TVScreen() {
 
     const currentPrice = getCurrentPrice(item);
 
-    // If price data is not available, show neutral trend without dash
-    if (item.previousPrice === undefined || item.previousPrice === null || typeof currentPrice !== 'number') {
-      console.log(`No trend data for ${item.name}, showing neutral`);
+    // If price data is not available, don't show any trend
+    if (
+      item.previousPrice === undefined ||
+      item.previousPrice === null ||
+      typeof currentPrice !== 'number'
+    ) {
+      console.log(`No trend data for ${item.name}, not showing trend`);
       return {
-        icon: '',
+        icon: 'remove',
         color: darkMode ? '#9CA3AF' : '#888888', // Lighter gray for dark mode
         show: false,
-      }; // Neutral trend without dash symbol
+      }; // No trend symbol
     }
 
     // Compare current price with previous price
     if (currentPrice > item.previousPrice) {
-      console.log(`Uptrend for ${item.name}: ${item.previousPrice} -> ${currentPrice}`);
+      console.log(
+        `Uptrend for ${item.name}: ${item.previousPrice} -> ${currentPrice}`,
+      );
       return {
-        icon: '↑',
+        icon: 'trending-up',
         color: darkMode ? '#34D399' : '#4CD964', // Adjusted green for dark mode
         show: true,
       }; // Green for up trend (price increased)
     } else if (currentPrice < item.previousPrice) {
-      console.log(`Downtrend for ${item.name}: ${item.previousPrice} -> ${currentPrice}`);
+      console.log(
+        `Downtrend for ${item.name}: ${item.previousPrice} -> ${currentPrice}`,
+      );
       return {
-        icon: '↓',
+        icon: 'trending-down',
         color: darkMode ? '#F87171' : '#FF3B30', // Adjusted red for dark mode
         show: true,
       }; // Red for down trend (price decreased)
     } else {
-      console.log(`No change for ${item.name}: ${item.previousPrice} -> ${currentPrice}`);
+      console.log(
+        `No change for ${item.name}: ${item.previousPrice} -> ${currentPrice}`,
+      );
       return {
-        icon: '',
+        icon: 'remove',
         color: darkMode ? '#9CA3AF' : '#888888', // Lighter gray for dark mode
         show: false,
-      }; // No icon for no change
+      }; // No trend symbol for unchanged price
     }
   };
 
@@ -468,7 +485,8 @@ export function TVScreen() {
   };
 
   // Get the highest daily price for an item, falling back to floor price if undefined
-  const getHighestDailyPrice = (item) => item.highestDailyPrice || item.floorPrice;
+  const getHighestDailyPrice = (item) =>
+    item.highestDailyPrice || item.floorPrice;
 
   // Get the current price for an item, falling back to floor price
   const getCurrentPrice = (item) => {
@@ -496,18 +514,51 @@ export function TVScreen() {
   // Check if an item was recently updated
   const isRecentlyUpdated = (itemId) => latestPriceUpdates.has(itemId);
 
+  // Add Ionicons to the document head
+  useEffect(() => {
+    // Check if Ionicons is already loaded
+    if (!document.getElementById('ionicons-css')) {
+      const link = document.createElement('link');
+      link.id = 'ionicons-css';
+      link.rel = 'stylesheet';
+      link.href =
+        'https://unpkg.com/ionicons@4.5.10-0/dist/css/ionicons.min.css';
+      document.head.appendChild(link);
+    }
+  }, []);
+
   if (loading) {
     return (
-      <div className={`flex h-screen items-center justify-center ${darkMode ? 'bg-gray-900' : ''}`}>
-        <div className={`h-12 w-12 animate-spin rounded-full border-4 ${darkMode ? 'border-blue-400 border-t-gray-900' : 'border-primary border-t-transparent'}`}></div>
+      <div
+        className={`flex h-screen items-center justify-center ${
+          darkMode ? 'bg-gray-900' : ''
+        }`}
+      >
+        <div
+          className={`h-12 w-12 animate-spin rounded-full border-4 ${
+            darkMode
+              ? 'border-blue-400 border-t-gray-900'
+              : 'border-primary border-t-transparent'
+          }`}
+        ></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={`container mx-auto p-4 ${darkMode ? 'bg-gray-900 text-white' : ''}`}>
-        <div className={`rounded-md p-4 ${darkMode ? 'border border-red-800 bg-red-900 text-red-200' : 'border border-red-200 bg-red-50 text-red-800'}`}>
+      <div
+        className={`container mx-auto p-4 ${
+          darkMode ? 'bg-gray-900 text-white' : ''
+        }`}
+      >
+        <div
+          className={`rounded-md p-4 ${
+            darkMode
+              ? 'border border-red-800 bg-red-900 text-red-200'
+              : 'border border-red-200 bg-red-50 text-red-800'
+          }`}
+        >
           <p>{error}</p>
           <button
             className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
@@ -520,6 +571,8 @@ export function TVScreen() {
     );
   }
 
+  // All hooks must be called before any conditional returns
+
   return (
     <div
       ref={containerRef}
@@ -530,50 +583,62 @@ export function TVScreen() {
       {/* Header with branch name and market crash indicator */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center">
-          <h1 className={`text-3xl font-bold mr-4 ${darkMode ? 'text-white' : 'text-black'}`}>
+          <h1
+            className={`text-3xl font-bold mr-4 ${
+              darkMode ? 'text-white' : 'text-black'
+            }`}
+          >
             {selectedBranch?.name || 'Tiger Bar Menu'}
           </h1>
-
-          {/* Auto-scroll toggle button */}
-          <button
-            onClick={() => setAutoScrollPaused(!autoScrollPaused)}
-            className="flex items-center justify-center rounded-full bg-primary p-2 text-white hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 mr-2"
-            title={autoScrollPaused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
-          >
-            {autoScrollPaused ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
-          </button>
-
-          {/* Dark mode toggle button */}
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className={`flex items-center justify-center rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              darkMode
-                ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300 focus:ring-yellow-400'
-                : 'bg-gray-700 text-yellow-300 hover:bg-gray-600 focus:ring-gray-700'
-            }`}
-            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {darkMode ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
-          </button>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-4">
+          {/* Dark mode toggle button - moved to top */}
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className={`flex items-center justify-center rounded-full w-10 h-10 shadow-lg focus:outline-none ${
+              darkMode
+                ? 'bg-yellow-400 text-gray-900'
+                : 'bg-gray-700 text-yellow-300'
+            }`}
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{ minWidth: '40px' }}
+          >
+            <div className="flex items-center justify-center w-6 h-6">
+              {darkMode ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-full h-full"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-full h-full"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                  />
+                </svg>
+              )}
+            </div>
+          </button>
+
           {marketCrashActive && (
             <div
               className={
@@ -592,15 +657,59 @@ export function TVScreen() {
         </div>
       </div>
 
+      {/* Floating buttons container - only for auto-scroll button */}
+      <div className="fixed bottom-6 right-6 flex flex-col space-y-4 z-50">
+        {/* Auto-scroll toggle button */}
+        <button
+          onClick={() => setAutoScrollPaused(!autoScrollPaused)}
+          className={`flex items-center justify-center rounded-full p-3 text-white shadow-lg hover:shadow-xl transition-all duration-300 ${
+            autoScrollPaused
+              ? 'bg-green-500 hover:bg-green-600'
+              : 'bg-red-500 hover:bg-red-600'
+          }`}
+          title={autoScrollPaused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
+        >
+          {autoScrollPaused ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          )}
+        </button>
+      </div>
+
       {/* Drinks grouped by category */}
       <div className="flex flex-col gap-6">
         {groupedItems.map((section) => (
           <div
             key={section.categoryId}
             className={`relative rounded-lg shadow-sm w-full ${
-              darkMode
-                ? 'border border-gray-700'
-                : 'border border-gray-200'
+              darkMode ? 'border border-gray-700' : 'border border-gray-200'
             }`}
           >
             {/* Category header */}
@@ -609,14 +718,22 @@ export function TVScreen() {
             </div>
 
             {/* Table header */}
-            <div className={`sticky-subheader flex p-3 font-semibold ${
-              darkMode
-                ? 'border-b border-gray-700 bg-gray-800'
-                : 'border-b border-gray-200 bg-gray-50'
-            }`}>
-              <div className="flex-grow">Item</div>
-              <div className="w-24 text-center">High</div>
-              <div className="w-32 text-center">Current / Trend</div>
+            <div
+              className={`sticky-subheader flex p-3 font-semibold ${
+                darkMode
+                  ? 'border-b border-gray-700 bg-gray-800'
+                  : 'border-b border-gray-200 bg-gray-50'
+              }`}
+            >
+              <div className="w-2/3 flex items-center justify-between">
+                <div className="w-1/2 text-left">Item</div>
+                <div className="w-1/2 text-center"></div>
+              </div>
+              <div className="w-1/3 flex items-center justify-between">
+                <div className="w-24 text-center">Low</div>
+                <div className="w-24 text-center">High</div>
+                <div className="w-32 text-center">Current</div>
+              </div>
             </div>
 
             {/* Table rows */}
@@ -630,46 +747,67 @@ export function TVScreen() {
                     key={item._id}
                     className={`flex p-3 ${
                       darkMode
-                        ? `border-b border-gray-700 ${isUpdated ? 'bg-green-900 bg-opacity-30 transition-colors duration-1000' : ''}`
-                        : `border-b border-gray-100 ${isUpdated ? 'bg-green-50 transition-colors duration-1000' : ''}`
+                        ? `border-b border-gray-700 ${
+                            isUpdated
+                              ? 'bg-green-900 bg-opacity-30 transition-colors duration-1000'
+                              : ''
+                          }`
+                        : `border-b border-gray-100 ${
+                            isUpdated
+                              ? 'bg-green-50 transition-colors duration-1000'
+                              : ''
+                          }`
                     }`}
                   >
-                    <div className="flex-grow">
-                      <div className="flex flex-col">
-                        <span className="font-medium">{item.name}</span>
-                        <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          Floor: {formatPrice(item.floorPrice)}
-                        </span>
+                    <div className="w-2/3 flex items-center justify-between">
+                      <div className="w-1/2">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{item.name}</span>
+                        </div>
+                      </div>
+
+                      <div className="w-1/2 flex items-center justify-center">
+                        {trend.show && trend.icon !== 'remove' && (
+                          <div
+                            className="trend-icon"
+                            style={{
+                              color: trend.color,
+                            }}
+                          >
+                            <i className={`ionicons ion-md-${trend.icon}`}></i>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="w-24 flex items-center justify-center">
-                      <span className={darkMode ? 'text-green-400' : 'text-green-600'}>
-                        {formatPrice(getHighestDailyPrice(item))}
-                      </span>
-                    </div>
+                    <div className="w-1/3 flex items-center justify-between">
+                      <div className="w-24 flex items-center justify-center">
+                        <span
+                          className={
+                            darkMode ? 'text-blue-400' : 'text-blue-600'
+                          }
+                        >
+                          {formatPrice(item.floorPrice)}
+                        </span>
+                      </div>
 
-                    <div className="w-32 flex items-center justify-center">
-                      <div className="flex items-center">
-                        {trend.show && (
-                          <span
-                            style={{
-                              color: trend.color,
-                              fontWeight: 'bold',
-                              fontSize: '18px',
-                              marginRight: '4px',
-                              width: '15px',
-                              display: 'inline-block',
-                              textAlign: 'center',
-                            }}
-                          >
-                            {trend.icon}
-                          </span>
-                        )}
+                      <div className="w-24 flex items-center justify-center">
+                        <span
+                          className={
+                            darkMode ? 'text-green-400' : 'text-green-600'
+                          }
+                        >
+                          {formatPrice(getHighestDailyPrice(item))}
+                        </span>
+                      </div>
+
+                      <div className="w-32 flex items-center justify-center">
                         <span
                           className={`font-bold ${
                             isUpdated
-                              ? darkMode ? 'text-green-400' : 'text-green-600'
+                              ? darkMode
+                                ? 'text-green-400'
+                                : 'text-green-600'
                               : ''
                           }`}
                         >
@@ -686,75 +824,110 @@ export function TVScreen() {
       </div>
 
       {/* Market info */}
-      <div className={`mt-6 rounded-lg p-4 shadow-sm ${
-        darkMode
-          ? 'border border-gray-700 bg-gray-800'
-          : 'border border-gray-200 bg-white'
-      }`}>
+      <div
+        className={`mt-6 rounded-lg p-4 shadow-sm ${
+          darkMode
+            ? 'border border-gray-700 bg-gray-800'
+            : 'border border-gray-200 bg-white'
+        }`}
+      >
         <div className="mb-2 flex items-center">
           <span className="mr-2 text-blue-600">ℹ️</span>
           <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
-            Prices fluctuate based on demand. Floor price is the minimum
-            possible price.
+            Prices fluctuate based on demand. "Low" shows the floor price
+            (minimum possible price). "High" shows the highest price reached
+            today.
           </span>
         </div>
 
         <div className="mb-2 flex items-center">
-          <span className={`mr-2 font-bold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>↑</span>
+          <span
+            className={`mr-2 font-bold ${
+              darkMode ? 'text-green-400' : 'text-green-600'
+            }`}
+          >
+            <i
+              className="ionicons ion-md-trending-up"
+              style={{ fontSize: '20px' }}
+            ></i>
+          </span>
           <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
-            Green arrow indicates price has increased compared to previous
-            price.
+            Green upward trend indicates price has increased compared to
+            previous price.
           </span>
         </div>
 
         <div className="mb-2 flex items-center">
-          <span className={`mr-2 font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>↓</span>
+          <span
+            className={`mr-2 font-bold ${
+              darkMode ? 'text-red-400' : 'text-red-600'
+            }`}
+          >
+            <i
+              className="ionicons ion-md-trending-down"
+              style={{ fontSize: '20px' }}
+            ></i>
+          </span>
           <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
-            Red arrow indicates price has decreased compared to previous price.
+            Red downward trend indicates price has decreased compared to
+            previous price.
+          </span>
+        </div>
+
+        <div className="mb-2 flex items-center">
+          <span
+            className={`mr-2 font-bold ${
+              darkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}
+          >
+            <i
+              className="ionicons ion-md-remove"
+              style={{ fontSize: '20px' }}
+            ></i>
+          </span>
+          <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
+            Horizontal line indicates no change in price.
           </span>
         </div>
 
         {marketCrashActive && (
-          <div className={`mt-4 flex items-center rounded-md p-3 ${
-            darkMode
-              ? 'bg-red-900 bg-opacity-30'
-              : 'bg-red-100'
-          }`}>
+          <div
+            className={`mt-4 flex items-center rounded-md p-3 ${
+              darkMode ? 'bg-red-900 bg-opacity-30' : 'bg-red-100'
+            }`}
+          >
             <span className="mr-2 text-red-600">⚠️</span>
-            <span className={`text-sm font-semibold ${
-              darkMode ? 'text-red-300' : 'text-red-800'
-            }`}>
+            <span
+              className={`text-sm font-semibold ${
+                darkMode ? 'text-red-300' : 'text-red-800'
+              }`}
+            >
               Market crash in progress! Prices have dropped significantly.
             </span>
           </div>
         )}
 
-        {/* Auto-scroll status indicator */}
-        <div className="mt-4 flex items-center justify-between">
-          <span className={`text-xs ${
-            darkMode
-              ? autoScrollPaused ? 'text-red-400' : 'text-green-400'
-              : autoScrollPaused ? 'text-red-500' : 'text-green-500'
-          }`}>
-            Auto-scroll: {autoScrollPaused ? 'Paused' : 'Active'}
-          </span>
-
-          <span className={`text-xs ${
-            darkMode ? 'text-gray-400' : 'text-gray-500'
-          }`}>
-            Mode: {darkMode ? 'Dark' : 'Light'}
+        {/* Status indicator */}
+        <div className="mt-4 flex items-center justify-center">
+          <span
+            className={`text-xs ${
+              darkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}
+          >
+            Use the floating buttons in the bottom right to control auto-scroll
+            and theme
           </span>
         </div>
       </div>
 
-      {/* Add some CSS for the market crash effect and sticky headers */}
+      {/* Add some CSS for the market crash effect, sticky headers, and floating buttons */}
       <style jsx global>{`
         /* Dark mode styles for body */
         body.dark-mode {
           background-color: #111827; /* bg-gray-900 */
           color: white;
         }
-        
+
         .market-crash-active {
           animation: shake 0.5s ease-in-out;
         }
@@ -792,14 +965,86 @@ export function TVScreen() {
             opacity: 0.5;
           }
         }
-        
+
         /* Scroll container */
         .scroll-container {
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
           transition: background-color 0.3s ease, color 0.3s ease;
+          min-height: 100vh;
         }
         
+        /* Prevent layout shifts when switching modes */
+        .container {
+          transition: background-color 0.3s ease;
+        }
+
+        /* Floating buttons styles - only for auto-scroll button */
+        .fixed.bottom-6.right-6 button {
+          width: 50px;
+          height: 50px;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+          transform: scale(1);
+          opacity: 0.25;
+          z-index: 1000;
+          transition: transform 0.2s ease, box-shadow 0.2s ease,
+            opacity 0.3s ease;
+        }
+
+        .fixed.bottom-6.right-6 button:hover {
+          transform: scale(1.1);
+          box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35);
+          opacity: 1;
+        }
+
+        /* Make the container also respond to hover for better UX */
+        .fixed.bottom-6.right-6:hover button {
+          opacity: 0.8;
+        }
+
+        /* Add a subtle pulse animation to the pause button when auto-scroll is active */
+        .fixed.bottom-6.right-6 button.bg-red-500 {
+          animation: subtle-pulse 2s infinite;
+        }
+        
+        /* Dark mode button styles - no hover animations */
+        .flex.items-center.gap-4 button {
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+          z-index: 10;
+          transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        @keyframes subtle-pulse {
+          0%,
+          100% {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            opacity: 0.5;
+          }
+          50% {
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5);
+            opacity: 0.7;
+          }
+        }
+
+        /* Trend icon styles */
+        .trend-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 50px;
+        }
+
+        .trend-icon i {
+          font-size: 32px;
+        }
+
+        /* Add a subtle animation for recently updated items */
+        .bg-green-50,
+        .bg-green-900.bg-opacity-30 {
+          transition: background-color 1s ease;
+        }
+
         /* Sticky header styles */
         .sticky-header {
           position: -webkit-sticky;
@@ -808,7 +1053,7 @@ export function TVScreen() {
           z-index: 10;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .sticky-subheader {
           position: -webkit-sticky;
           position: sticky;
@@ -817,29 +1062,29 @@ export function TVScreen() {
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
           transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-        
+
         /* Ensure each category section has proper spacing */
         .flex-col > div {
           margin-bottom: 16px;
           overflow: visible; /* Important for sticky positioning */
           transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-        
+
         /* Dark mode scrollbar styles */
         .dark-mode .scroll-container::-webkit-scrollbar {
           width: 12px;
         }
-        
+
         .dark-mode .scroll-container::-webkit-scrollbar-track {
           background: #1f2937; /* bg-gray-800 */
         }
-        
+
         .dark-mode .scroll-container::-webkit-scrollbar-thumb {
           background-color: #4b5563; /* bg-gray-600 */
           border-radius: 6px;
           border: 3px solid #1f2937; /* border color matching track */
         }
-        
+
         .dark-mode .scroll-container::-webkit-scrollbar-thumb:hover {
           background-color: #6b7280; /* bg-gray-500 */
         }
