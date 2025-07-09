@@ -793,7 +793,13 @@ export function TVScreen() {
                           <div
                             className="trend-icon"
                             style={{
-                              color: trend.color,
+                              color: trend.icon === 'trending-up' 
+                                ? '#00C853' // Bright green
+                                : trend.icon === 'trending-down' 
+                                  ? '#FF1744' // Bright red
+                                  : '#757575', // Gray
+                              fontSize: '20px',
+                              fontWeight: 'bold'
                             }}
                           >
                             <i className={`ionicons ion-md-${trend.icon}`}></i>
@@ -825,13 +831,22 @@ export function TVScreen() {
 
                       <div className="w-32 flex items-center justify-center">
                         <span
-                          className={`font-bold ${
-                            isUpdated
-                              ? darkMode
-                                ? 'text-green-400'
-                                : 'text-green-600'
-                              : ''
-                          }`}
+                          style={{
+                            fontWeight: 'bold',
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '0.375rem',
+                            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                            backgroundColor: trend.show
+                              ? trend.icon === 'trending-up'
+                                ? '#00C853' // Bright green
+                                : trend.icon === 'trending-down'
+                                  ? '#FF1744' // Bright red
+                                  : '#757575' // Gray
+                              : '#757575', // Gray
+                            color: 'white',
+                            display: 'inline-block'
+                          }}
+                          className={`${isUpdated ? 'animate-pulse' : ''}`}
                         >
                           {formatPrice(getCurrentPrice(item))}
                         </span>
@@ -864,13 +879,11 @@ export function TVScreen() {
 
         <div className="mb-2 flex items-center">
           <span
-            className={`mr-2 font-bold ${
-              darkMode ? 'text-green-400' : 'text-green-600'
-            }`}
+            className="mr-2 font-bold"
           >
             <i
               className="ionicons ion-md-trending-up"
-              style={{ fontSize: '20px' }}
+              style={{ fontSize: '20px', color: '#00C853' }}
             ></i>
           </span>
           <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
@@ -881,13 +894,11 @@ export function TVScreen() {
 
         <div className="mb-2 flex items-center">
           <span
-            className={`mr-2 font-bold ${
-              darkMode ? 'text-red-400' : 'text-red-600'
-            }`}
+            className="mr-2 font-bold"
           >
             <i
               className="ionicons ion-md-trending-down"
-              style={{ fontSize: '20px' }}
+              style={{ fontSize: '20px', color: '#FF1744' }}
             ></i>
           </span>
           <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
@@ -898,13 +909,11 @@ export function TVScreen() {
 
         <div className="mb-2 flex items-center">
           <span
-            className={`mr-2 font-bold ${
-              darkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}
+            className="mr-2 font-bold"
           >
             <i
               className="ionicons ion-md-remove"
-              style={{ fontSize: '20px' }}
+              style={{ fontSize: '20px', color: '#757575' }}
             ></i>
           </span>
           <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
@@ -1129,8 +1138,8 @@ export function TVScreen() {
           left: 0;
           width: 100%;
           height: 100%;
-          object-fit: cover; /* Cover the entire container */
-          filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1)) blur(2px);
+          object-fit: fill; /* Cover the entire container */
+          filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
           opacity: 0.15; /* Default opacity for light mode */
         }
 
@@ -1139,7 +1148,7 @@ export function TVScreen() {
           max-width: 90%;
           max-height: 90%;
           object-fit: contain;
-          filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1)) blur(1px);
+          filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
           opacity: 0.1; /* Default opacity for light mode */
         }
 
