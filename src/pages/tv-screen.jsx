@@ -27,6 +27,7 @@ export function TVScreen() {
   const [latestPriceUpdates, setLatestPriceUpdates] = useState(new Map());
   const [autoScrollPaused, setAutoScrollPaused] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [blinkingItems, setBlinkingItems] = useState(new Set());
 
   // Ref for the interval that checks connection status
   const connectionCheckInterval = useRef(null);
@@ -38,6 +39,8 @@ export function TVScreen() {
   const initialDataLoadedRef = useRef(false);
   // Ref for the auto-scroll interval
   const autoScrollInterval = useRef(null);
+  // Ref for the blinking effect interval
+  const blinkingInterval = useRef(null);
   // Ref for the main container element
   const containerRef = useRef(null);
 
@@ -233,6 +236,9 @@ export function TVScreen() {
       if (autoScrollInterval.current) {
         clearInterval(autoScrollInterval.current);
       }
+      if (blinkingInterval.current) {
+        clearInterval(blinkingInterval.current);
+      }
     };
   }, []); // Empty dependency array - only run once
 
@@ -350,6 +356,67 @@ export function TVScreen() {
       setGroupedItems(grouped);
     }
   }, [allItems, categories, groupItemsByCategory]);
+  
+  // Set up blinking effect for items with trends
+  useEffect(() => {
+    // Function to randomly select items with trends to blink
+    const updateBlinkingItems = () => {
+      // Get all items with trends
+      const itemsWithTrends = allItems.filter(item => {
+        const trend = getTrendInfo(item);
+        return trend.show === true;
+      });
+      
+      // If no items with trends, clear blinking items
+      if (itemsWithTrends.length === 0) {
+        setBlinkingItems(new Set());
+        return;
+      }
+      
+      // Randomly select up to 3 items to blink every 2 seconds
+      const maxItems = Math.min(3, itemsWithTrends.length);
+      const selectedItems = new Set();
+      
+      // Shuffle the array of items with trends
+      const shuffled = [...itemsWithTrends].sort(() => 0.5 - Math.random());
+      
+      // Select the first maxItems
+      for (let i = 0; i < maxItems; i++) {
+        if (i < shuffled.length) {
+          selectedItems.add(shuffled[i]._id);
+        }
+      }
+      
+      console.log('Selected items for blinking:', Array.from(selectedItems));
+      
+      // Update state with the new set of blinking items
+      setBlinkingItems(selectedItems);
+    };
+    
+    // Only start the interval if we have items and the component is mounted
+    if (allItems.length > 0 && !loading) {
+      // Clear any existing interval
+      if (blinkingInterval.current) {
+        clearInterval(blinkingInterval.current);
+      }
+      
+      // Initial update
+      updateBlinkingItems();
+      
+      // Set up interval to update blinking items every 2 seconds
+      blinkingInterval.current = setInterval(updateBlinkingItems, 2000);
+      
+      console.log('Blinking interval set up with', allItems.length, 'items available');
+    }
+    
+    // Clean up on unmount or when dependencies change
+    return () => {
+      if (blinkingInterval.current) {
+        clearInterval(blinkingInterval.current);
+        blinkingInterval.current = null;
+      }
+    };
+  }, [allItems, loading]);
 
   // Set up auto-scrolling
   useEffect(() => {
@@ -517,7 +584,7 @@ export function TVScreen() {
   // Check if an item was recently updated
   const isRecentlyUpdated = (itemId) => latestPriceUpdates.has(itemId);
 
-  // Add Ionicons to the document head
+  // Add Ionicons and custom animations to the document head
   useEffect(() => {
     // Check if Ionicons is already loaded
     if (!document.getElementById('ionicons-css')) {
@@ -527,6 +594,26 @@ export function TVScreen() {
       link.href =
         'https://unpkg.com/ionicons@4.5.10-0/dist/css/ionicons.min.css';
       document.head.appendChild(link);
+    }
+    
+    // Add custom animations if not already added
+    if (!document.getElementById('custom-animations')) {
+      const style = document.createElement('style');
+      style.id = 'custom-animations';
+      style.textContent = `
+        @keyframes blink {
+          0% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.1); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
+        }
+      `;
+      document.head.appendChild(style);
     }
   }, []);
 
@@ -844,9 +931,13 @@ export function TVScreen() {
                                   : '#757575' // Gray
                               : '#757575', // Gray
                             color: 'white',
-                            display: 'inline-block'
+                            display: 'inline-block',
+                            animation: trend.show && blinkingItems.has(item._id) 
+                              ? 'blink 0.8s ease-in-out infinite' 
+                              : isUpdated 
+                                ? 'pulse 2s ease-in-out' 
+                                : 'none'
                           }}
-                          className={`${isUpdated ? 'animate-pulse' : ''}`}
                         >
                           {formatPrice(getCurrentPrice(item))}
                         </span>
@@ -955,7 +1046,7 @@ export function TVScreen() {
       <style jsx global>{`
 
         html {
-          font-size: 130%;
+          font-size: 145%;
         }
         /* Dark mode styles for body */
         body.dark-mode {
