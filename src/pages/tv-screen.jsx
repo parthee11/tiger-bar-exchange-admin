@@ -953,6 +953,10 @@ export function TVScreen() {
 
       {/* Add some CSS for the market crash effect, sticky headers, and floating buttons */}
       <style jsx global>{`
+
+        html {
+          font-size: 130%;
+        }
         /* Dark mode styles for body */
         body.dark-mode {
           background-color: #111827; /* bg-gray-900 */
@@ -1140,7 +1144,7 @@ export function TVScreen() {
           height: 100%;
           object-fit: fill; /* Cover the entire container */
           filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
-          opacity: 0.15; /* Default opacity for light mode */
+          opacity: 0.1; /* Default opacity for light mode */
         }
 
         /* Tiger Logo styles */
@@ -1154,13 +1158,13 @@ export function TVScreen() {
 
         /* Adjust watermark for dark mode */
         .dark-mode .watermark-backdrop {
-          filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2)) blur(2px);
+          filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
           opacity: 0.2; /* Slightly higher opacity for dark mode */
         }
         
         .dark-mode .tiger-logo {
           filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2)) blur(1px);
-          opacity: 0.1; /* Slightly higher opacity for dark mode */
+          opacity: 0.075; /* Slightly higher opacity for dark mode */
         }
       `}</style>
     </div>
