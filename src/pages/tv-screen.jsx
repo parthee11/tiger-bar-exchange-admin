@@ -5,6 +5,9 @@ import socketService from '../services/socketService';
 import branchesApi from '../api/branches';
 import api from '../api/api';
 import { formatCurrency } from '../utils/formatters';
+import tigerWhiteLogo from '../assets/images/TIGER LOGO - WHITE.png';
+import tigerDarkLogo from '../assets/images/TIGER LOGO - DARK.png';
+import tvScreenBackdrop from '../assets/images/tv-screen-backdrop.png';
 
 /**
  * TV Screen component that displays drinks grouped by category for the selected branch
@@ -657,6 +660,25 @@ export function TVScreen() {
         </div>
       </div>
 
+      {/* Watermark - fixed position */}
+      <div className="fixed inset-0 pointer-events-none z-10 watermark-container">
+        {/* TV Screen Backdrop as full-screen background */}
+        <img 
+          src={tvScreenBackdrop} 
+          alt="TV Screen Backdrop" 
+          className="watermark-backdrop"
+        />
+        
+        {/* Tiger Bar logo centered on top of the backdrop */}
+        <div className="fixed inset-0 flex items-center justify-center">
+          <img 
+            src={darkMode ? tigerWhiteLogo : tigerDarkLogo} 
+            alt="Tiger Bar Logo" 
+            className="tiger-logo"
+          />
+        </div>
+      </div>
+
       {/* Floating buttons container - only for auto-scroll button */}
       <div className="fixed bottom-6 right-6 flex flex-col space-y-4 z-50">
         {/* Auto-scroll toggle button */}
@@ -725,11 +747,11 @@ export function TVScreen() {
                   : 'border-b border-gray-200 bg-gray-50'
               }`}
             >
-              <div className="w-2/3 flex items-center justify-between">
+              <div className="w-1/2 flex items-center justify-between">
                 <div className="w-1/2 text-left">Item</div>
                 <div className="w-1/2 text-center"></div>
               </div>
-              <div className="w-1/3 flex items-center justify-between">
+              <div className="w-1/2 flex items-center justify-between">
                 <div className="w-24 text-center">Low</div>
                 <div className="w-24 text-center">High</div>
                 <div className="w-32 text-center">Current</div>
@@ -759,7 +781,7 @@ export function TVScreen() {
                           }`
                     }`}
                   >
-                    <div className="w-2/3 flex items-center justify-between">
+                    <div className="w-1/2 flex items-center justify-between">
                       <div className="w-1/2">
                         <div className="flex flex-col">
                           <span className="font-medium">{item.name}</span>
@@ -780,12 +802,12 @@ export function TVScreen() {
                       </div>
                     </div>
 
-                    <div className="w-1/3 flex items-center justify-between">
+                    <div className="w-1/2 flex items-center justify-between">
                       <div className="w-24 flex items-center justify-center">
                         <span
-                          className={
-                            darkMode ? 'text-blue-400' : 'text-blue-600'
-                          }
+                          className={`font-bold ${
+                            darkMode ? 'text-red-400' : 'text-red-600'
+                          }`}
                         >
                           {formatPrice(item.floorPrice)}
                         </span>
@@ -793,9 +815,9 @@ export function TVScreen() {
 
                       <div className="w-24 flex items-center justify-center">
                         <span
-                          className={
+                          className={`font-bold ${
                             darkMode ? 'text-green-400' : 'text-green-600'
-                          }
+                          }`}
                         >
                           {formatPrice(getHighestDailyPrice(item))}
                         </span>
@@ -1087,6 +1109,49 @@ export function TVScreen() {
 
         .dark-mode .scroll-container::-webkit-scrollbar-thumb:hover {
           background-color: #6b7280; /* bg-gray-500 */
+        }
+
+        /* Watermark styles */
+        .watermark-container {
+          pointer-events: none;
+          z-index: 20;
+          width: 100%;
+          height: 100%;
+          position: fixed;
+          top: 0;
+          left: 0;
+        }
+
+        /* TV Screen Backdrop styles */
+        .watermark-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover; /* Cover the entire container */
+          filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1)) blur(2px);
+          opacity: 0.15; /* Default opacity for light mode */
+        }
+
+        /* Tiger Logo styles */
+        .tiger-logo {
+          max-width: 90%;
+          max-height: 90%;
+          object-fit: contain;
+          filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1)) blur(1px);
+          opacity: 0.1; /* Default opacity for light mode */
+        }
+
+        /* Adjust watermark for dark mode */
+        .dark-mode .watermark-backdrop {
+          filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2)) blur(2px);
+          opacity: 0.2; /* Slightly higher opacity for dark mode */
+        }
+        
+        .dark-mode .tiger-logo {
+          filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2)) blur(1px);
+          opacity: 0.1; /* Slightly higher opacity for dark mode */
         }
       `}</style>
     </div>
