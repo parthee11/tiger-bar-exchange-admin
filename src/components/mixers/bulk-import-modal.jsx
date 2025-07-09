@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
-import { AlertCircle, Check, FileUp } from "lucide-react";
+import { AlertCircle, Check, FileUp, Download } from "lucide-react";
 import { Button } from "../ui/button";
 import { Modal } from "../ui/modal";
+import { downloadCSV } from "../../utils/exportUtils";
 
 /**
  * BulkImportModal component for importing mixers in bulk
@@ -233,15 +234,38 @@ export function BulkImportModal({ isOpen, onClose, onImport, formatPrice }) {
               </p>
             </div>
             
-            <div className="mt-4">
-              <h3 className="font-medium mb-2">Sample CSV Format:</h3>
-              <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
-                name,price,available<br/>
-                Coca Cola,2.50,true<br/>
-                Orange Juice,3.00,true<br/>
-                Tonic Water,2.00,false
-              </pre>
+            <div className="mt-4 flex justify-between items-center">
+              <h3 className="font-medium">Sample CSV Format:</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={() => {
+                  const templateData = [
+                    { name: "Coca Cola", price: 2.50, available: true },
+                    { name: "Orange Juice", price: 3.00, available: true },
+                    { name: "Tonic Water", price: 2.00, available: false }
+                  ];
+                  
+                  const headers = [
+                    { title: "name", key: "name" },
+                    { title: "price", key: "price" },
+                    { title: "available", key: "available" }
+                  ];
+                  
+                  downloadCSV(templateData, headers, "mixers_template.csv");
+                }}
+              >
+                <Download className="h-4 w-4" />
+                Download Template
+              </Button>
             </div>
+            <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
+              name,price,available<br/>
+              Coca Cola,2.50,true<br/>
+              Orange Juice,3.00,true<br/>
+              Tonic Water,2.00,false
+            </pre>
             
             <div className="mt-4">
               <h3 className="font-medium mb-2">Sample JSON Format:</h3>
@@ -277,6 +301,25 @@ export function BulkImportModal({ isOpen, onClose, onImport, formatPrice }) {
                 <span className="block sm:inline">{error}</span>
               </div>
             )}
+            
+            <div className="flex justify-end mb-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+                onClick={() => {
+                  const headers = [
+                    { title: "name", key: "name" },
+                    { title: "price", key: "price" },
+                    { title: "available", key: "available" }
+                  ];
+                  downloadCSV(data, headers, "mixers_data.csv");
+                }}
+              >
+                <Download className="h-4 w-4" />
+                Export as CSV
+              </Button>
+            </div>
             
             <div className="border rounded-md max-h-64 overflow-y-auto">
               <table className="w-full text-sm">

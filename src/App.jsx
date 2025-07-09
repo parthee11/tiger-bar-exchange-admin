@@ -13,8 +13,10 @@ import { Loyalty } from './pages/loyalty';
 import { Settings } from './pages/settings';
 import { SignIn } from './pages/sign-in';
 import TableManagement from './pages/tables';
+import { TVScreen } from './pages/tv-screen';
 import { ProtectedRoute } from './components/protected-route';
 import { PublicRoute } from './components/public-route';
+import { TVScreenRoute } from './components/tv-screen-route';
 import { AuthProvider } from './contexts/auth-context';
 import { ConfirmationProvider } from './components/providers/confirmation-provider';
 import { Toaster } from './components/ui/toaster';
@@ -101,6 +103,7 @@ const routes = [
     protected: true,
     title: 'Settings',
   },
+  // TV Screen route is handled separately and is now protected
 ];
 
 /**
@@ -118,6 +121,9 @@ function App() {
             <Route path="/sign-in" element={<PublicRoute><SignIn /></PublicRoute>} />
             {/* Sign-up route is hidden from UI but kept for future use */}
             <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
+            
+            {/* TV Screen Route - Protected, requires authentication */}
+            <Route path="/tv-screen" element={<ProtectedRoute><TVScreen /></ProtectedRoute>} />
             
             {/* Protected Dashboard Routes - Generated from configuration */}
             {routes.map(({ path, component: Component, protected: isProtected }) => (

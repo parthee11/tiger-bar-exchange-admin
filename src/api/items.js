@@ -11,8 +11,27 @@ const itemsApi = {
    */
   getItems: async (params = {}) => {
     try {
-      const response = await apiClient.get('/items', { params });
-      return response.data;
+      // If both branch and type are provided, use the specific endpoint
+      if (params.branch && params.type) {
+        // Extract includePrices from params if it exists
+        const { includePrices, ...otherParams } = params;
+
+        // Build the URL with the includePrices parameter if it's true
+        let url = `/items/branch/${params.branch}/type/${params.type}`;
+        if (includePrices) {
+          url += '?includePrices=true';
+        }
+
+        // Make the API call with any remaining params as query parameters
+        const response = await apiClient.get(url, {
+          params: Object.keys(otherParams).length > 0 ? otherParams : undefined,
+        });
+        return response.data;
+      } else {
+        // Otherwise use the general endpoint with query parameters
+        const response = await apiClient.get('/items', { params });
+        return response.data;
+      }
     } catch (error) {
       throw error.response?.data || error.message;
     }
@@ -74,7 +93,7 @@ const itemsApi = {
       throw error.response?.data || error.message;
     }
   },
-  
+
   /**
    * Bulk import items
    * @param {Array} items - Array of item objects

@@ -5,41 +5,79 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Checkbox } from '../components/ui/checkbox';
-import { Plus, Edit, Trash2, MapPin, Phone, Store, Table, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Phone, Store, Table, Loader2, Copy, Check } from 'lucide-react';
 import { branchesApi } from '../api/api';
 import apiClient from '../api/index';
 import { useConfirmationDialog } from '../components/providers/confirmation-provider';
 import { useToast } from '../components/ui/use-toast';
 
 // Branch Card Component
-const BranchCard = ({ branch, onEdit, onDelete, onToggleStatus, onViewTables, actionLoading }) => (
-    <Card key={branch._id || branch.id} className="overflow-hidden border-muted/40 hover:border-muted/80 transition-colors">
+function BranchCard({ branch, onEdit, onDelete, onToggleStatus, onViewTables, actionLoading }) {
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopyId = () => {
+    if (!branch.branchId) return;
+    
+    navigator.clipboard.writeText(branch.branchId)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+      })
+      .catch(err => {
+        console.error('Failed to copy branch ID: ', err);
+      });
+  };
+  
+  return (
+    <Card className="overflow-hidden border-muted/40 hover:border-muted/80 transition-colors">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="flex items-center">
-              {branch.name}
-              <button
-                onClick={() => onToggleStatus(branch)}
-                className={`ml-2 inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium cursor-pointer transition-colors ${
-                  branch.isActive
-                    ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                    : 'bg-red-50 text-red-700 hover:bg-red-100'
-                }`}
-                title={branch.isActive ? 'Click to deactivate' : 'Click to activate'}
-              >
-                {branch.isActive ? 'Active' : 'Inactive'}
-              </button>
-            </CardTitle>
-            <div className="flex items-center mt-1 gap-2">
-              <button
-                onClick={(e) => onViewTables(branch, e)}
-                className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 cursor-pointer hover:bg-blue-100 transition-colors"
-                title="View tables"
-              >
-                <Table className="h-3 w-3 mr-1" />
-                {branch.numberOfTables || 0} Tables
-              </button>
+            <div className="flex flex-col">
+              <div className="flex items-center">
+                <CardTitle className="flex items-center">
+                  {branch.name}
+                  <button
+                    onClick={() => onToggleStatus(branch)}
+                    className={`ml-2 inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium cursor-pointer transition-colors ${
+                      branch.isActive
+                        ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                        : 'bg-red-50 text-red-700 hover:bg-red-100'
+                    }`}
+                    title={branch.isActive ? 'Click to deactivate' : 'Click to activate'}
+                  >
+                    {branch.isActive ? 'Active' : 'Inactive'}
+                  </button>
+                </CardTitle>
+              </div>
+              
+              <div className="flex items-center mt-1 gap-2">
+                {branch.branchId && (
+                  <div className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-700/10">
+                    <span className="mr-1">Branch ID:</span>
+                    <span className="font-mono">{branch.branchId}</span>
+                    <button
+                      onClick={handleCopyId}
+                      className="ml-1 p-0.5 hover:bg-gray-200 rounded-full transition-colors"
+                      title="Copy branch ID"
+                    >
+                      {copied ? (
+                        <Check className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <Copy className="h-3 w-3 text-gray-500" />
+                      )}
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={(e) => onViewTables(branch, e)}
+                  className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 cursor-pointer hover:bg-blue-100 transition-colors"
+                  title="View tables"
+                >
+                  <Table className="h-3 w-3 mr-1" />
+                  {branch.numberOfTables || 0} Tables
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -78,6 +116,7 @@ const BranchCard = ({ branch, onEdit, onDelete, onToggleStatus, onViewTables, ac
       </CardContent>
     </Card>
   );
+}
 
 // Branch Form Component
 const BranchForm = ({ formData, error, actionLoading, onInputChange, onCheckboxChange, onSubmit, onCancel, submitButtonText }) => {
@@ -175,7 +214,8 @@ const BranchForm = ({ formData, error, actionLoading, onInputChange, onCheckboxC
 };
 
 // Tables Modal Component
-const TablesModal = ({ isOpen, onOpenChange, currentBranch, selectedTables, loading, onClose }) => (
+function TablesModal({ isOpen, onOpenChange, currentBranch, selectedTables, loading, onClose }) {
+  return (
     <Dialog
       open={isOpen}
       onOpenChange={onOpenChange}
@@ -236,6 +276,7 @@ const TablesModal = ({ isOpen, onOpenChange, currentBranch, selectedTables, load
       </DialogContent>
     </Dialog>
   );
+}
 
 // Main Branches Component
 export function Branches() {

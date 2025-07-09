@@ -8,6 +8,7 @@ import { useToast } from "../components/ui/use-toast";
 import { ItemTable } from "../components/items/ItemTable";
 import { ItemModal } from "../components/items/ItemModal";
 import { ItemTypeTag } from "../components/items/ItemTypeTag";
+import { BulkImportModal } from "../components/items/BulkImportModal";
 
 export function Items() {
   const [items, setItems] = useState([]);
@@ -545,6 +546,12 @@ export function Items() {
     }
   };
 
+  // Navigate between bulk import steps
+  const goToStep = (step) => {
+    setBulkImportStep(step);
+    setBulkImportError(null);
+  };
+
   // Get item type badge color
   const getItemTypeColor = (type) => {
     switch (type) {
@@ -693,209 +700,18 @@ export function Items() {
       />
 
       {/* Bulk Import Modal */}
-      {isBulkImportModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Bulk Import Items</h2>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 w-8 p-0" 
-                onClick={closeBulkImportModal}
-                type="button"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {/* Step 1: Upload File */}
-            {bulkImportStep === 1 && (
-              <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded mb-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 text-blue-500" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm">
-                        Upload a CSV or JSON file with item data. The file should contain columns for name, type, category, branches, floorPrice, and isHardLiquor (optional).
-                      </p>
-                      <p className="text-sm mt-2">
-                        <strong>Required fields:</strong> name, type, category, branches, floorPrice
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {bulkImportError && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                    <span className="block sm:inline">{bulkImportError}</span>
-                  </div>
-                )}
-                
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <FileUp className="h-10 w-10 mx-auto text-gray-400 mb-4" />
-                  <p className="text-sm text-gray-500 mb-4">
-                    Drag and drop your file here, or click to browse
-                  </p>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept=".csv,.json"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <Button 
-                    variant="outline" 
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Select File
-                  </Button>
-                  <p className="text-xs text-gray-400 mt-4">
-                    Supported formats: .csv, .json
-                  </p>
-                </div>
-                
-                <div className="mt-4">
-                  <h3 className="font-medium mb-2">Sample CSV Format:</h3>
-                  <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
-                    name,type,category,branches,floorPrice,isHardLiquor<br/>
-                    Burger,food,Burgers,branch1;branch2,10.99,false<br/>
-                    Mojito,drinks,Cocktails,branch1;branch3,8.50,true<br/>
-                    Apple Flavor,sheesha,Fruit Flavors,branch2;branch3,20.00,false
-                  </pre>
-                </div>
-                
-                <div className="mt-4">
-                  <h3 className="font-medium mb-2">Sample JSON Format:</h3>
-                  <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
-                    {`[
-  {
-    "name": "Burger",
-    "type": "food",
-    "category": "Burgers",
-    "branches": ["branch1", "branch2"],
-    "floorPrice": 10.99
-  },
-  {
-    "name": "Mojito",
-    "type": "drinks",
-    "category": "Cocktails",
-    "branches": ["branch1", "branch3"],
-    "floorPrice": 8.50,
-    "isHardLiquor": true
-  }
-]`}
-                  </pre>
-                </div>
-                
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mt-4">
-                  <p className="text-sm">
-                    <strong>Note:</strong> For categories and branches, you can use either IDs or names. If using names, they must match exactly with existing categories and branches in the system.
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            {/* Step 2: Review Data */}
-            {bulkImportStep === 2 && (
-              <div className="space-y-4">
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mb-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 text-yellow-500" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm">
-                        Review the items below before importing. {bulkImportData.length} items found.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                {bulkImportError && (
-                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                    <span className="block sm:inline">{bulkImportError}</span>
-                  </div>
-                )}
-                
-                <div className="border rounded-md max-h-64 overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-2 text-left font-medium text-gray-500">Name</th>
-                        <th className="px-4 py-2 text-left font-medium text-gray-500">Type</th>
-                        <th className="px-4 py-2 text-left font-medium text-gray-500">Category</th>
-                        <th className="px-4 py-2 text-left font-medium text-gray-500">Floor Price</th>
-                        <th className="px-4 py-2 text-left font-medium text-gray-500">Hard Liquor</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {bulkImportData.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-4 py-2">{item.name}</td>
-                          <td className="px-4 py-2">
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              getItemTypeColor(item.type)
-                            }`}>
-                              {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2">
-                            {typeof item.category === 'object' 
-                              ? item.category.name 
-                              : getCategoryName(item.category)}
-                          </td>
-                          <td className="px-4 py-2">{formatPrice(item.floorPrice)}</td>
-                          <td className="px-4 py-2">{item.isHardLiquor ? "Yes" : "No"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                
-                <div className="flex justify-between mt-6">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setBulkImportStep(1);
-                      setBulkImportError(null);
-                    }}
-                  >
-                    Back
-                  </Button>
-                  <Button 
-                    onClick={handleBulkImport}
-                    disabled={isImporting}
-                  >
-                    {isImporting ? "Importing..." : "Import Items"}
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {/* Step 3: Success */}
-            {bulkImportStep === 3 && (
-              <div className="space-y-4 text-center">
-                <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <Check className="h-8 w-8 text-green-600" />
-                </div>
-                <h3 className="text-lg font-medium">Import Successful</h3>
-                <p className="text-gray-500">{bulkImportSuccess}</p>
-                <Button 
-                  className="mt-4" 
-                  onClick={closeBulkImportModal}
-                >
-                  Done
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <BulkImportModal
+        isOpen={isBulkImportModalOpen}
+        onClose={closeBulkImportModal}
+        bulkImportData={bulkImportData}
+        bulkImportStep={bulkImportStep}
+        bulkImportError={bulkImportError}
+        bulkImportSuccess={bulkImportSuccess}
+        isImporting={isImporting}
+        handleFileUpload={handleFileUpload}
+        handleBulkImport={handleBulkImport}
+        goToStep={goToStep}
+      />
     </div>
   );
 }

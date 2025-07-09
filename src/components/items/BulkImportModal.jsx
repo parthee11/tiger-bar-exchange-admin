@@ -1,60 +1,61 @@
-import { useRef } from "react";
-import { Button } from "../ui/button";
-import { Modal } from "../ui/modal";
-import { AlertCircle, FileUp, Check, Download } from "lucide-react";
-import { downloadCSV } from "../../utils/exportUtils";
+import { useRef } from 'react';
+import { AlertCircle, Check, FileUp, Download } from 'lucide-react';
+import { Button } from '../ui/button';
+import { Modal } from '../ui/modal';
+import { downloadCSV } from '../../utils/exportUtils';
 
 /**
- * BulkImportModal component for importing multiple categories at once
- * 
+ * BulkImportModal component for importing multiple items at once
+ *
  * @param {Object} props - Component props
  * @param {boolean} props.isOpen - Whether the modal is open
  * @param {Function} props.onClose - Function to call when the modal is closed
- * @param {Array} props.bulkImportData - Array of categories to import
+ * @param {Array} props.bulkImportData - Array of items to import
  * @param {number} props.bulkImportStep - Current step in the import process (1: Upload, 2: Review, 3: Success)
  * @param {string|null} props.bulkImportError - Error message to display
  * @param {string|null} props.bulkImportSuccess - Success message to display
  * @param {boolean} props.isImporting - Whether the import is in progress
  * @param {Function} props.handleFileUpload - Function to handle file upload
  * @param {Function} props.handleBulkImport - Function to handle bulk import
- * @param {Function} props.getCategoryTypeColor - Function to get color class based on category type
  * @param {Function} props.goToStep - Function to navigate between steps
  * @returns {JSX.Element} BulkImportModal component
  */
-export function BulkImportModal({ 
-  isOpen, 
-  onClose, 
-  bulkImportData, 
-  bulkImportStep, 
-  bulkImportError, 
-  bulkImportSuccess, 
+export function BulkImportModal({
+  isOpen,
+  onClose,
+  bulkImportData,
+  bulkImportStep,
+  bulkImportError,
+  bulkImportSuccess,
   isImporting,
   handleFileUpload,
   handleBulkImport,
-  getCategoryTypeColor,
-  goToStep
+  goToStep,
 }) {
   const fileInputRef = useRef(null);
 
   // Function to handle CSV export
   const handleExportTemplate = () => {
     const templateData = [
-      { name: "Burgers", type: "food", description: "All burger items" },
-      { name: "Cocktails", type: "drinks", description: "Signature cocktails" },
-      { name: "Fruit Flavors", type: "sheesha", description: "Fruit-based sheesha flavors" }
+      { name: 'Burger', type: 'food', category: 'Burgers', branches: 'branch1;branch2', floorPrice: 50, isHardLiquor: false },
+      { name: 'Mojito', type: 'drinks', category: 'Cocktails', branches: 'branch1;branch3', floorPrice: 35, isHardLiquor: false },
+      { name: 'Whiskey', type: 'drinks', category: 'Spirits', branches: 'branch2;branch3', floorPrice: 45, isHardLiquor: true },
     ];
-    
+
     const headers = [
-      { title: "name", key: "name" },
-      { title: "type", key: "type" },
-      { title: "description", key: "description" }
+      { title: 'name', key: 'name' },
+      { title: 'type', key: 'type' },
+      { title: 'category', key: 'category' },
+      { title: 'branches', key: 'branches' },
+      { title: 'floorPrice', key: 'floorPrice' },
+      { title: 'isHardLiquor', key: 'isHardLiquor' },
     ];
-    
-    downloadCSV(templateData, headers, "categories_template.csv");
+
+    downloadCSV(templateData, headers, 'items_template.csv');
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Bulk Import Categories" size="2xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Bulk Import Items" size="2xl">
       {/* Step 1: Upload File */}
       {bulkImportStep === 1 && (
         <div className="space-y-4">
@@ -65,21 +66,21 @@ export function BulkImportModal({
               </div>
               <div className="ml-3">
                 <p className="text-sm">
-                  Upload a CSV or JSON file with category data. The file should contain columns for name, type, and description.
+                  Upload a CSV or JSON file with item data. The file should contain columns for name, type, category, floorPrice, and isHardLiquor.
                 </p>
                 <p className="text-sm mt-2">
-                  <strong>Supported types:</strong> food, drinks, sheesha
+                  <strong>Supported types:</strong> food, drinks
                 </p>
               </div>
             </div>
           </div>
-          
+
           {bulkImportError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
               <span className="block sm:inline">{bulkImportError}</span>
             </div>
           )}
-          
+
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
             <FileUp className="h-10 w-10 mx-auto text-gray-400 mb-4" />
             <p className="text-sm text-gray-500 mb-4">
@@ -93,8 +94,8 @@ export function BulkImportModal({
               className="hidden"
               id="file-upload"
             />
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => fileInputRef.current?.click()}
             >
               Select File
@@ -103,12 +104,12 @@ export function BulkImportModal({
               Supported formats: .csv, .json
             </p>
           </div>
-          
+
           <div className="mt-4 flex justify-between items-center">
             <h3 className="font-medium">Sample CSV Format:</h3>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="flex items-center gap-1"
               onClick={handleExportTemplate}
             >
@@ -117,25 +118,25 @@ export function BulkImportModal({
             </Button>
           </div>
           <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
-            name,type,description<br/>
-            Burgers,food,All burger items<br/>
-            Cocktails,drinks,Signature cocktails<br/>
-            Fruit Flavors,sheesha,Fruit-based sheesha flavors
+            name,type,category,branches,floorPrice,isHardLiquor<br/>
+            Burger,food,Burgers,branch1;branch2,50,false<br/>
+            Mojito,drinks,Cocktails,branch1;branch3,35,false<br/>
+            Whiskey,drinks,Spirits,branch2;branch3,45,true
           </pre>
-          
+
           <div className="mt-4">
             <h3 className="font-medium mb-2">Sample JSON Format:</h3>
             <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
               {`[
-  {"name": "Burgers", "type": "food", "description": "All burger items"},
-  {"name": "Cocktails", "type": "drinks", "description": "Signature cocktails"},
-  {"name": "Fruit Flavors", "type": "sheesha", "description": "Fruit-based sheesha flavors"}
+  {"name": "Burger", "type": "food", "category": "Burgers", "branches": ["branch1", "branch2"], "floorPrice": 50, "isHardLiquor": false},
+  {"name": "Mojito", "type": "drinks", "category": "Cocktails", "branches": ["branch1", "branch3"], "floorPrice": 35, "isHardLiquor": false},
+  {"name": "Whiskey", "type": "drinks", "category": "Spirits", "branches": ["branch2", "branch3"], "floorPrice": 45, "isHardLiquor": true}
 ]`}
             </pre>
           </div>
         </div>
       )}
-      
+
       {/* Step 2: Review Data */}
       {bulkImportStep === 2 && (
         <div className="space-y-4">
@@ -146,81 +147,90 @@ export function BulkImportModal({
               </div>
               <div className="ml-3">
                 <p className="text-sm">
-                  Review the categories below before importing. {bulkImportData.length} categories found.
+                  Review the items below before importing. {bulkImportData.length} items found.
                 </p>
               </div>
             </div>
           </div>
-          
+
           {bulkImportError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
               <span className="block sm:inline">{bulkImportError}</span>
             </div>
           )}
-          
+
           <div className="flex justify-end mb-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="flex items-center gap-1"
               onClick={() => {
                 const headers = [
-                  { title: "name", key: "name" },
-                  { title: "type", key: "type" },
-                  { title: "description", key: "description" }
+                  { title: 'name', key: 'name' },
+                  { title: 'type', key: 'type' },
+                  { title: 'category', key: 'category' },
+                  { title: 'branches', key: 'branches' },
+                  { title: 'floorPrice', key: 'floorPrice' },
+                  { title: 'isHardLiquor', key: 'isHardLiquor' },
                 ];
-                downloadCSV(bulkImportData, headers, "categories_data.csv");
+                downloadCSV(bulkImportData, headers, 'items_data.csv');
               }}
             >
               <Download className="h-4 w-4" />
               Export as CSV
             </Button>
           </div>
-          
+
           <div className="border rounded-md max-h-64 overflow-y-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left font-medium text-gray-500">Name</th>
                   <th className="px-4 py-2 text-left font-medium text-gray-500">Type</th>
-                  <th className="px-4 py-2 text-left font-medium text-gray-500">Description</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500">Category</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500">Branches</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500">Floor Price</th>
+                  <th className="px-4 py-2 text-left font-medium text-gray-500">Hard Liquor</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {bulkImportData.map((category, index) => (
+                {bulkImportData.map((item, index) => (
                   <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-2">{category.name}</td>
+                    <td className="px-4 py-2">{item.name}</td>
+                    <td className="px-4 py-2">{item.type}</td>
+                    <td className="px-4 py-2">{item.category}</td>
                     <td className="px-4 py-2">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        getCategoryTypeColor(category.type)
-                      }`}>
-                        {category.type.charAt(0).toUpperCase() + category.type.slice(1)}
-                      </span>
+                      {Array.isArray(item.branches)
+                        ? item.branches.join(', ')
+                        : typeof item.branches === 'string'
+                          ? item.branches
+                          : '-'}
                     </td>
-                    <td className="px-4 py-2">{category.description || "-"}</td>
+                    <td className="px-4 py-2">{item.floorPrice} AED</td>
+                    <td className="px-4 py-2">{item.isHardLiquor ? 'Yes' : 'No'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          
+
           <div className="flex justify-between mt-6">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => goToStep(1)}
             >
               Back
             </Button>
-            <Button 
+            <Button
               onClick={handleBulkImport}
               disabled={isImporting}
             >
-              {isImporting ? "Importing..." : "Import Categories"}
+              {isImporting ? 'Importing...' : 'Import Items'}
             </Button>
           </div>
         </div>
       )}
-      
+
       {/* Step 3: Success */}
       {bulkImportStep === 3 && (
         <div className="space-y-4 text-center">
@@ -229,8 +239,8 @@ export function BulkImportModal({
           </div>
           <h3 className="text-lg font-medium">Import Successful</h3>
           <p className="text-gray-500">{bulkImportSuccess}</p>
-          <Button 
-            className="mt-4" 
+          <Button
+            className="mt-4"
             onClick={onClose}
           >
             Done

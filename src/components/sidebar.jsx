@@ -13,6 +13,7 @@ import {
   Tag,
   Wine,
   Table,
+  Tv,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { Button } from './ui/button';
@@ -81,6 +82,12 @@ const navItems = [
     href: '/loyalty',
     icon: Users,
     description: 'View users, assign manual rewards if needed',
+  },
+  {
+    title: 'TV Screen',
+    href: '/tv-screen',
+    icon: Tv,
+    description: 'Display drinks menu on TV screen',
   },
 ];
 
