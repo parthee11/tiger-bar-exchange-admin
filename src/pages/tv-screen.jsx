@@ -26,7 +26,8 @@ export function TVScreen() {
   const [marketCrashActive, setMarketCrashActive] = useState(false);
   const [latestPriceUpdates, setLatestPriceUpdates] = useState(new Map());
   const [autoScrollPaused, setAutoScrollPaused] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  // Always dark mode, no toggle needed
+  const darkMode = true;
   const [blinkingItems, setBlinkingItems] = useState(new Set());
 
   // Ref for the interval that checks connection status
@@ -88,16 +89,6 @@ export function TVScreen() {
         includePrices: true, // Include current and previous prices for trend display
       });
 
-      // Log the first item to check if we're getting price data
-      if (itemsData && itemsData.length > 0) {
-        console.log('Sample item with price data:', {
-          name: itemsData[0].name,
-          currentPrice: itemsData[0].currentPrice,
-          previousPrice: itemsData[0].previousPrice,
-          floorPrice: itemsData[0].floorPrice,
-        });
-      }
-
       // Update state in a batch to reduce renders
       setCategories(categoriesData);
       setAllItems(itemsData || []);
@@ -147,31 +138,11 @@ export function TVScreen() {
     }
   }, []);
 
-  // Load dark mode preference from localStorage
+  // Always use dark mode
   useEffect(() => {
-    const savedDarkMode = localStorage.getItem('tvScreenDarkMode');
-    if (savedDarkMode !== null) {
-      setDarkMode(savedDarkMode === 'true');
-    } else {
-      // Check if user prefers dark mode based on system preference
-      const prefersDarkMode =
-        window.matchMedia &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setDarkMode(prefersDarkMode);
-    }
+    // Apply dark mode class to body for global styling
+    document.body.classList.add('dark-mode');
   }, []);
-
-  // Save dark mode preference to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('tvScreenDarkMode', darkMode.toString());
-
-    // Apply dark mode class to body for global styling if needed
-    if (darkMode) {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-    }
-  }, [darkMode]);
 
   // Connect to socket and initialize data - only run once
   useEffect(() => {
@@ -269,6 +240,7 @@ export function TVScreen() {
               oldPrice: data.oldPrice,
               newPrice: data.newPrice,
               highestDailyPrice: data.highestDailyPrice,
+              lowestDailyPrice: data.lowestDailyPrice,
             });
 
             return {
@@ -276,6 +248,7 @@ export function TVScreen() {
               previousPrice: data.oldPrice,
               currentPrice: data.newPrice,
               highestDailyPrice: data.highestDailyPrice,
+              lowestDailyPrice: data.lowestDailyPrice,
             };
           }
           return item;
@@ -287,6 +260,9 @@ export function TVScreen() {
             name: updatedItems[0].name,
             currentPrice: updatedItems[0].currentPrice,
             previousPrice: updatedItems[0].previousPrice,
+            floorPrice: updatedItems[0].floorPrice,
+            highestDailyPrice: updatedItems[0].highestDailyPrice,
+            lowestDailyPrice: updatedItems[0].lowestDailyPrice,
           });
         }
 
@@ -356,59 +332,55 @@ export function TVScreen() {
       setGroupedItems(grouped);
     }
   }, [allItems, categories, groupItemsByCategory]);
-  
+
   // Set up blinking effect for items with trends
   useEffect(() => {
     // Function to randomly select items with trends to blink
     const updateBlinkingItems = () => {
-      // Get all items with trends
-      const itemsWithTrends = allItems.filter(item => {
+      // Get all items with high or low trends (not neutral)
+      const itemsWithTrends = allItems.filter((item) => {
         const trend = getTrendInfo(item);
-        return trend.show === true;
+        return trend.show === true && trend.icon !== 'remove';
       });
-      
+
       // If no items with trends, clear blinking items
       if (itemsWithTrends.length === 0) {
         setBlinkingItems(new Set());
         return;
       }
-      
+
       // Randomly select up to 3 items to blink every 2 seconds
       const maxItems = Math.min(3, itemsWithTrends.length);
       const selectedItems = new Set();
-      
+
       // Shuffle the array of items with trends
       const shuffled = [...itemsWithTrends].sort(() => 0.5 - Math.random());
-      
+
       // Select the first maxItems
       for (let i = 0; i < maxItems; i++) {
         if (i < shuffled.length) {
           selectedItems.add(shuffled[i]._id);
         }
       }
-      
-      console.log('Selected items for blinking:', Array.from(selectedItems));
-      
+
       // Update state with the new set of blinking items
       setBlinkingItems(selectedItems);
     };
-    
+
     // Only start the interval if we have items and the component is mounted
     if (allItems.length > 0 && !loading) {
       // Clear any existing interval
       if (blinkingInterval.current) {
         clearInterval(blinkingInterval.current);
       }
-      
+
       // Initial update
       updateBlinkingItems();
-      
+
       // Set up interval to update blinking items every 2 seconds
       blinkingInterval.current = setInterval(updateBlinkingItems, 2000);
-      
-      console.log('Blinking interval set up with', allItems.length, 'items available');
     }
-    
+
     // Clean up on unmount or when dependencies change
     return () => {
       if (blinkingInterval.current) {
@@ -490,21 +462,14 @@ export function TVScreen() {
     };
   }, [loading, error, groupedItems, autoScrollPaused]);
 
-  // Get trend icon and color based on price comparison
+  // Get trend icon and color based on price comparison with base price
   const getTrendInfo = (item) => {
-    // Log the item to debug
-    console.log(`Getting trend for ${item.name}:`, {
-      currentPrice: item.currentPrice,
-      previousPrice: item.previousPrice,
-      floorPrice: item.floorPrice,
-    });
-
     const currentPrice = getCurrentPrice(item);
 
     // If price data is not available, don't show any trend
     if (
-      item.previousPrice === undefined ||
-      item.previousPrice === null ||
+      item.floorPrice === undefined ||
+      item.floorPrice === null ||
       typeof currentPrice !== 'number'
     ) {
       console.log(`No trend data for ${item.name}, not showing trend`);
@@ -515,34 +480,25 @@ export function TVScreen() {
       }; // No trend symbol
     }
 
-    // Compare current price with previous price
-    if (currentPrice > item.previousPrice) {
-      console.log(
-        `Uptrend for ${item.name}: ${item.previousPrice} -> ${currentPrice}`,
-      );
+    // Compare current price with base price (floor price)
+    if (currentPrice > item.floorPrice) {
       return {
         icon: 'trending-up',
         color: darkMode ? '#34D399' : '#4CD964', // Adjusted green for dark mode
         show: true,
-      }; // Green for up trend (price increased)
-    } else if (currentPrice < item.previousPrice) {
-      console.log(
-        `Downtrend for ${item.name}: ${item.previousPrice} -> ${currentPrice}`,
-      );
+      }; // Green for up trend (price higher than base)
+    } else if (currentPrice < item.floorPrice) {
       return {
         icon: 'trending-down',
         color: darkMode ? '#F87171' : '#FF3B30', // Adjusted red for dark mode
         show: true,
-      }; // Red for down trend (price decreased)
+      }; // Red for down trend (price lower than base)
     } else {
-      console.log(
-        `No change for ${item.name}: ${item.previousPrice} -> ${currentPrice}`,
-      );
       return {
         icon: 'remove',
         color: darkMode ? '#9CA3AF' : '#888888', // Lighter gray for dark mode
-        show: false,
-      }; // No trend symbol for unchanged price
+        show: false, // Don't show neutral trend for blinking
+      }; // Neutral trend when price equals base price
     }
   };
 
@@ -558,14 +514,20 @@ export function TVScreen() {
   const getHighestDailyPrice = (item) =>
     item.highestDailyPrice || item.floorPrice;
 
+  // Get the lowest daily price for an item, falling back to floor price if undefined or <= 0
+  const getLowestDailyPrice = (item) => {
+    // If lowestDailyPrice is 0 or negative or undefined, use floorPrice
+    if (!item.lowestDailyPrice || item.lowestDailyPrice <= 0) {
+      return item.floorPrice;
+    }
+
+    // Return the lowest daily price even if it's less than the floor price
+    // This allows showing the true lowest price reached during the day
+    return item.lowestDailyPrice;
+  };
+
   // Get the current price for an item, falling back to floor price
   const getCurrentPrice = (item) => {
-    // Log the item to debug
-    console.log(`Getting current price for ${item.name}:`, {
-      currentPrice: item.currentPrice,
-      floorPrice: item.floorPrice,
-    });
-
     // Ensure we have a valid number
     if (typeof item.currentPrice === 'number' && !isNaN(item.currentPrice)) {
       return item.currentPrice;
@@ -595,22 +557,48 @@ export function TVScreen() {
         'https://unpkg.com/ionicons@4.5.10-0/dist/css/ionicons.min.css';
       document.head.appendChild(link);
     }
-    
+
     // Add custom animations if not already added
     if (!document.getElementById('custom-animations')) {
       const style = document.createElement('style');
       style.id = 'custom-animations';
       style.textContent = `
         @keyframes blink {
-          0% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.1); }
-          100% { opacity: 1; transform: scale(1); }
+          0% { 
+            opacity: 1; 
+            transform: scale(1); 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); 
+          }
+          50% { 
+            opacity: 1; /* Maintain full opacity */
+            transform: scale(1.1); 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); 
+            filter: brightness(1.3);
+          }
+          100% { 
+            opacity: 1; 
+            transform: scale(1); 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); 
+          }
         }
         
         @keyframes pulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-          100% { transform: scale(1); }
+          0% { 
+            transform: scale(1); 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); 
+            opacity: 1;
+          }
+          50% { 
+            transform: scale(1.05); 
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+            filter: brightness(1.2);
+            opacity: 1; /* Maintain full opacity */
+          }
+          100% { 
+            transform: scale(1); 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); 
+            opacity: 1;
+          }
         }
       `;
       document.head.appendChild(style);
@@ -668,66 +656,20 @@ export function TVScreen() {
       ref={containerRef}
       className={`container mx-auto p-4 h-screen overflow-auto scroll-container ${
         marketCrashActive ? 'market-crash-active' : ''
-      } ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}
+      } ${darkMode ? 'bg-black text-white' : 'bg-white text-black'}`}
     >
       {/* Header with branch name and market crash indicator */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center">
           <h1
-            className={`text-3xl font-bold mr-4 ${
-              darkMode ? 'text-white' : 'text-black'
-            }`}
+            className="font-bold mr-4 text-white"
+            style={{ fontSize: '2.175rem' }}
           >
             {selectedBranch?.name || 'Tiger Bar Menu'}
           </h1>
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Dark mode toggle button - moved to top */}
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className={`flex items-center justify-center rounded-full w-10 h-10 shadow-lg focus:outline-none ${
-              darkMode
-                ? 'bg-yellow-400 text-gray-900'
-                : 'bg-gray-700 text-yellow-300'
-            }`}
-            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-            style={{ minWidth: '40px' }}
-          >
-            <div className="flex items-center justify-center w-6 h-6">
-              {darkMode ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-full h-full"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-full h-full"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                  />
-                </svg>
-              )}
-            </div>
-          </button>
 
           {marketCrashActive && (
             <div
@@ -735,13 +677,13 @@ export function TVScreen() {
                 'market-crash-indicator animate-pulse rounded-md bg-red-600 px-4 py-2 text-white'
               }
             >
-              <span className="font-bold">MARKET CRASH ACTIVE</span>
+              <span className="font-bold" style={{ fontSize: '1.305rem' }}>MARKET CRASH ACTIVE</span>
             </div>
           )}
 
           {!isConnected && (
             <div className="rounded-md bg-yellow-500 px-4 py-2 text-white">
-              <span>Reconnecting...</span>
+              <span style={{ fontSize: '1.305rem' }}>Reconnecting...</span>
             </div>
           )}
         </div>
@@ -750,38 +692,39 @@ export function TVScreen() {
       {/* Watermark - fixed position */}
       <div className="fixed inset-0 pointer-events-none z-10 watermark-container">
         {/* TV Screen Backdrop as full-screen background */}
-        <img 
-          src={tvScreenBackdrop} 
-          alt="TV Screen Backdrop" 
+        <img
+          src={tvScreenBackdrop}
+          alt="TV Screen Backdrop"
           className="watermark-backdrop"
         />
-        
+
         {/* Tiger Bar logo centered on top of the backdrop */}
         <div className="fixed inset-0 flex items-center justify-center">
-          <img 
-            src={darkMode ? tigerWhiteLogo : tigerDarkLogo} 
-            alt="Tiger Bar Logo" 
+          <img
+            src={darkMode ? tigerWhiteLogo : tigerDarkLogo}
+            alt="Tiger Bar Logo"
             className="tiger-logo"
           />
         </div>
       </div>
 
-      {/* Floating buttons container - only for auto-scroll button */}
+      {/* Floating buttons container - enhanced auto-scroll button */}
       <div className="fixed bottom-6 right-6 flex flex-col space-y-4 z-50">
-        {/* Auto-scroll toggle button */}
+        {/* Auto-scroll toggle button - enhanced with label */}
         <button
           onClick={() => setAutoScrollPaused(!autoScrollPaused)}
-          className={`flex items-center justify-center rounded-full p-3 text-white shadow-lg hover:shadow-xl transition-all duration-300 ${
+          className={`flex items-center justify-center rounded-lg p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300 ${
             autoScrollPaused
-              ? 'bg-green-500 hover:bg-green-600'
-              : 'bg-red-500 hover:bg-red-600'
-          }`}
+              ? 'bg-green-600 hover:bg-green-700'
+              : 'bg-red-600 hover:bg-red-700'
+          } border-2 border-white`}
           title={autoScrollPaused ? 'Resume auto-scroll' : 'Pause auto-scroll'}
+          style={{ width: '70px', height: '70px' }}
         >
           {autoScrollPaused ? (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
+              className="h-10 w-10"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -796,7 +739,7 @@ export function TVScreen() {
           ) : (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
+              className="h-10 w-10"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -817,36 +760,32 @@ export function TVScreen() {
         {groupedItems.map((section) => (
           <div
             key={section.categoryId}
-            className={`relative rounded-lg shadow-sm w-full ${
-              darkMode ? 'border border-gray-700' : 'border border-gray-200'
-            }`}
+            className="relative rounded-lg shadow-sm w-full border border-gray-800"
+            style={{ backgroundColor: '#000000' }}
           >
             {/* Category header */}
-            <div className="sticky-header bg-primary p-4 text-white">
-              <h2 className="text-xl font-bold">{section.title}</h2>
+            <div className="sticky-header p-3 text-white" style={{ backgroundColor: '#222222' }}>
+              <h2 className="font-bold" style={{ fontSize: '1.45rem' }}>{section.title}</h2>
             </div>
 
             {/* Table header */}
             <div
-              className={`sticky-subheader flex p-3 font-semibold ${
-                darkMode
-                  ? 'border-b border-gray-700 bg-gray-800'
-                  : 'border-b border-gray-200 bg-gray-50'
-              }`}
+              className="sticky-subheader flex p-3 font-semibold border-b border-gray-700"
+              style={{ backgroundColor: '#111111' }}
             >
               <div className="w-1/2 flex items-center justify-between">
-                <div className="w-1/2 text-left">Item</div>
+                <div className="w-1/2 text-left" style={{ color: '#FFFFFF', fontSize: '1.2325rem' }}>Item</div>
                 <div className="w-1/2 text-center"></div>
               </div>
               <div className="w-1/2 flex items-center justify-between">
-                <div className="w-24 text-center">Low</div>
-                <div className="w-24 text-center">High</div>
-                <div className="w-32 text-center">Current</div>
+                <div className="w-full text-center" style={{ color: '#FF0000', fontSize: '1.2325rem' }}>Lowest</div>
+                <div className="w-full text-center" style={{ color: '#00FF00', fontSize: '1.2325rem' }}>Highest</div>
+                <div className="w-full text-center" style={{ color: '#FFFFFF', fontSize: '1.2325rem' }}>Current</div>
               </div>
             </div>
 
             {/* Table rows */}
-            <div className={darkMode ? 'bg-gray-800' : 'bg-white'}>
+            <div style={{ backgroundColor: '#000000' }}>
               {section.data.map((item) => {
                 const trend = getTrendInfo(item);
                 const isUpdated = isRecentlyUpdated(item._id);
@@ -854,89 +793,110 @@ export function TVScreen() {
                 return (
                   <div
                     key={item._id}
-                    className={`flex p-3 ${
-                      darkMode
-                        ? `border-b border-gray-700 ${
-                            isUpdated
-                              ? 'bg-green-900 bg-opacity-30 transition-colors duration-1000'
-                              : ''
-                          }`
-                        : `border-b border-gray-100 ${
-                            isUpdated
-                              ? 'bg-green-50 transition-colors duration-1000'
-                              : ''
-                          }`
-                    }`}
+                    className="flex p-3 border-b border-gray-800"
+                    style={{
+                      backgroundColor: isUpdated ? '#003300' : '#000000',
+                      transition: 'background-color 1000ms',
+                    }}
                   >
                     <div className="w-1/2 flex items-center justify-between">
                       <div className="w-1/2">
                         <div className="flex flex-col">
-                          <span className="font-medium">{item.name}</span>
+                          <span className="font-medium" style={{ fontSize: '1.305rem' }}>{item.name}</span>
+                          <span className="text-xs" style={{ color: '#AAAAAA', fontSize: '1.015rem' }}>Price: {formatPrice(item.floorPrice)}</span>
                         </div>
                       </div>
 
                       <div className="w-1/2 flex items-center justify-center">
-                        {trend.show && trend.icon !== 'remove' && (
+                        {trend.show && (
                           <div
                             className="trend-icon"
                             style={{
-                              color: trend.icon === 'trending-up' 
-                                ? '#00C853' // Bright green
-                                : trend.icon === 'trending-down' 
-                                  ? '#FF1744' // Bright red
+                              color: trend.icon === 'trending-up'
+                                ? '#00FF00' // Bright green like in the image
+                                : trend.icon === 'trending-down'
+                                  ? '#FF0000' // Bright red like in the image
                                   : '#757575', // Gray
                               fontSize: '20px',
-                              fontWeight: 'bold'
+                              fontWeight: 'bold',
                             }}
                           >
-                            <i className={`ionicons ion-md-${trend.icon}`}></i>
+                            {trend.icon === 'trending-up' ? (
+                              <span style={{ fontSize: '26px' }}>▲</span>
+                            ) : trend.icon === 'trending-down' ? (
+                              <span style={{ fontSize: '26px' }}>▼</span>
+                            ) : (
+                              <span style={{ fontSize: '26px' }}>—</span>
+                            )}
                           </div>
                         )}
                       </div>
                     </div>
 
                     <div className="w-1/2 flex items-center justify-between">
-                      <div className="w-24 flex items-center justify-center">
+                      <div className="w-full flex items-center justify-center">
                         <span
-                          className={`font-bold ${
-                            darkMode ? 'text-red-400' : 'text-red-600'
-                          }`}
+                          className="font-bold"
+                          style={{
+                            color: '#FF0000', // Red for lowest price
+                            fontSize: '1.2325rem',
+                          }}
                         >
-                          {formatPrice(item.floorPrice)}
+                          {formatPrice(getLowestDailyPrice(item))}
                         </span>
                       </div>
 
-                      <div className="w-24 flex items-center justify-center">
+                      <div className="w-full flex items-center justify-center">
                         <span
-                          className={`font-bold ${
-                            darkMode ? 'text-green-400' : 'text-green-600'
-                          }`}
+                          className="font-bold"
+                          style={{
+                            color: '#00FF00', // Green for highest price
+                            fontSize: '1.2325rem',
+                          }}
                         >
                           {formatPrice(getHighestDailyPrice(item))}
                         </span>
                       </div>
 
-                      <div className="w-32 flex items-center justify-center">
+                      <div className="w-full flex items-center justify-center">
                         <span
+                          className="price-button"
+                          data-trend={trend.icon === 'trending-up' ? 'up' : trend.icon === 'trending-down' ? 'down' : 'neutral'}
+                          onMouseEnter={(e) => e.currentTarget.classList.add('price-button-hover')}
+                          onMouseLeave={(e) => e.currentTarget.classList.remove('price-button-hover')}
                           style={{
                             fontWeight: 'bold',
                             padding: '0.25rem 0.75rem',
-                            borderRadius: '0.375rem',
-                            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                            backgroundColor: trend.show
-                              ? trend.icon === 'trending-up'
-                                ? '#00C853' // Bright green
-                                : trend.icon === 'trending-down'
-                                  ? '#FF1744' // Bright red
-                                  : '#757575' // Gray
-                              : '#757575', // Gray
-                            color: 'white',
+                            fontSize: '1.2325rem',
+                            color: trend.icon === 'trending-up'
+                              ? '#000000' // Black text on green background for better contrast
+                              : trend.icon === 'trending-down'
+                                ? '#FFFFFF' // White text on red background for better contrast
+                                : '#FFFFFF', // White for neutral
                             display: 'inline-block',
-                            animation: trend.show && blinkingItems.has(item._id) 
-                              ? 'blink 0.8s ease-in-out infinite' 
-                              : isUpdated 
-                                ? 'pulse 2s ease-in-out' 
-                                : 'none'
+                            animation: trend.icon !== 'remove' && trend.show && blinkingItems.has(item._id)
+                              ? 'blink 0.8s ease-in-out infinite'
+                              : isUpdated
+                                ? 'pulse 2s ease-in-out'
+                                : 'none',
+                            /* Button-like styling with fully opaque trend colors */
+                            backgroundColor: trend.icon === 'trending-up'
+                              ? '#00FF00' // Pure green, fully opaque
+                              : trend.icon === 'trending-down'
+                                ? '#FF0000' // Pure red, fully opaque
+                                : 'rgba(255, 255, 255, 0.1)', // Semi-transparent white for neutral
+                            borderRadius: '4px',
+                            border: trend.icon === 'trending-up'
+                              ? '2px solid #00FF00' // Thicker green border
+                              : trend.icon === 'trending-down'
+                                ? '2px solid #FF0000' // Thicker red border
+                                : '1px solid #FFFFFF', // White border
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                            cursor: 'pointer',
+                            minWidth: '80px',
+                            textAlign: 'center',
+                            transition: 'all 0.2s ease-in-out',
+                            /* Add hover class to simulate hover effect even without mouse */
                           }}
                         >
                           {formatPrice(getCurrentPrice(item))}
@@ -953,62 +913,50 @@ export function TVScreen() {
 
       {/* Market info */}
       <div
-        className={`mt-6 rounded-lg p-4 shadow-sm ${
-          darkMode
-            ? 'border border-gray-700 bg-gray-800'
-            : 'border border-gray-200 bg-white'
-        }`}
+        className="mt-6 rounded-lg p-4 shadow-sm border border-gray-800"
+        style={{ backgroundColor: '#111111' }}
       >
         <div className="mb-2 flex items-center">
           <span className="mr-2 text-blue-600">ℹ️</span>
-          <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
-            Prices fluctuate based on demand. "Low" shows the floor price
-            (minimum possible price). "High" shows the highest price reached
-            today.
+          <span className="text-gray-300" style={{ fontSize: '0.75rem' }}>
+            Prices fluctuate based on demand. "Low" shows the lowest price reached
+            today. "High" shows the highest price reached today. Base price is shown below each item name.
           </span>
         </div>
 
         <div className="mb-2 flex items-center">
           <span
             className="mr-2 font-bold"
+            style={{ fontSize: '18px', color: '#00FF00' }}
           >
-            <i
-              className="ionicons ion-md-trending-up"
-              style={{ fontSize: '20px', color: '#00C853' }}
-            ></i>
+            ▲
           </span>
-          <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
-            Green upward trend indicates price has increased compared to
-            previous price.
+          <span className="text-gray-300" style={{ fontSize: '0.75rem' }}>
+            Green upward trend indicates current price is higher than the base price.
           </span>
         </div>
 
         <div className="mb-2 flex items-center">
           <span
             className="mr-2 font-bold"
+            style={{ fontSize: '18px', color: '#FF0000' }}
           >
-            <i
-              className="ionicons ion-md-trending-down"
-              style={{ fontSize: '20px', color: '#FF1744' }}
-            ></i>
+            ▼
           </span>
-          <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
-            Red downward trend indicates price has decreased compared to
-            previous price.
+          <span className="text-gray-300" style={{ fontSize: '0.75rem' }}>
+            Red downward trend indicates current price is lower than the base price.
           </span>
         </div>
 
         <div className="mb-2 flex items-center">
           <span
             className="mr-2 font-bold"
+            style={{ fontSize: '18px', color: '#757575' }}
           >
-            <i
-              className="ionicons ion-md-remove"
-              style={{ fontSize: '20px', color: '#757575' }}
-            ></i>
+            —
           </span>
-          <span className={`text-sm ${darkMode ? 'text-gray-300' : ''}`}>
-            Horizontal line indicates no change in price.
+          <span className="text-gray-300" style={{ fontSize: '0.75rem' }}>
+            Horizontal line indicates current price is equal to the base price.
           </span>
         </div>
 
@@ -1020,9 +968,8 @@ export function TVScreen() {
           >
             <span className="mr-2 text-red-600">⚠️</span>
             <span
-              className={`text-sm font-semibold ${
-                darkMode ? 'text-red-300' : 'text-red-800'
-              }`}
+              className="text-red-300 font-semibold"
+              style={{ fontSize: '0.75rem' }}
             >
               Market crash in progress! Prices have dropped significantly.
             </span>
@@ -1032,12 +979,10 @@ export function TVScreen() {
         {/* Status indicator */}
         <div className="mt-4 flex items-center justify-center">
           <span
-            className={`text-xs ${
-              darkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}
+            className="text-gray-400"
+            style={{ fontSize: '0.7rem' }}
           >
-            Use the floating buttons in the bottom right to control auto-scroll
-            and theme
+            Use the floating button in the bottom right to control auto-scroll
           </span>
         </div>
       </div>
@@ -1045,12 +990,10 @@ export function TVScreen() {
       {/* Add some CSS for the market crash effect, sticky headers, and floating buttons */}
       <style jsx global>{`
 
-        html {
-          font-size: 145%;
-        }
+        /* No global font size adjustment */
         /* Dark mode styles for body */
         body.dark-mode {
-          background-color: #111827; /* bg-gray-900 */
+          background-color: #000000; /* Pure black */
           color: white;
         }
 
@@ -1082,6 +1025,7 @@ export function TVScreen() {
           animation: blink 1s infinite;
         }
 
+        /* This is for the market crash indicator only */
         @keyframes blink {
           0%,
           100% {
@@ -1090,6 +1034,25 @@ export function TVScreen() {
           50% {
             opacity: 0.5;
           }
+        }
+
+        /* Price button hover effect */
+        .price-button-hover {
+          transform: scale(1.05);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Trend-specific hover effects with full opacity */
+        .price-button[data-trend="up"].price-button-hover {
+          background-color: #00FF00 !important; /* Pure green, fully opaque */
+          box-shadow: 0 4px 8px rgba(0, 255, 0, 0.7) !important;
+          filter: brightness(1.2) !important;
+        }
+        
+        .price-button[data-trend="down"].price-button-hover {
+          background-color: #FF0000 !important; /* Pure red, fully opaque */
+          box-shadow: 0 4px 8px rgba(255, 0, 0, 0.7) !important;
+          filter: brightness(1.2) !important;
         }
 
         /* Scroll container */
@@ -1111,7 +1074,7 @@ export function TVScreen() {
           height: 50px;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
           transform: scale(1);
-          opacity: 0.25;
+          opacity: 0.1; /* Reduced opacity when idle */
           z-index: 1000;
           transition: transform 0.2s ease, box-shadow 0.2s ease,
             opacity 0.3s ease;
@@ -1128,9 +1091,21 @@ export function TVScreen() {
           opacity: 0.8;
         }
 
-        /* Add a subtle pulse animation to the pause button when auto-scroll is active */
-        .fixed.bottom-6.right-6 button.bg-red-500 {
+        /* Enhanced pulse animation to the pause/play button */
+        .fixed.bottom-6.right-6 button.bg-red-600 {
           animation: subtle-pulse 2s infinite;
+          box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+        }
+        
+        .fixed.bottom-6.right-6 button.bg-green-600 {
+          animation: subtle-pulse 2s infinite;
+          box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+        }
+        
+        @keyframes subtle-pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
         }
         
         /* Dark mode button styles - no hover animations */
@@ -1144,11 +1119,11 @@ export function TVScreen() {
           0%,
           100% {
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            opacity: 0.5;
+            opacity: 0.3;
           }
           50% {
             box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5);
-            opacity: 0.7;
+            opacity: 0.5;
           }
         }
 
@@ -1202,17 +1177,17 @@ export function TVScreen() {
         }
 
         .dark-mode .scroll-container::-webkit-scrollbar-track {
-          background: #1f2937; /* bg-gray-800 */
+          background: #000000; /* Pure black */
         }
 
         .dark-mode .scroll-container::-webkit-scrollbar-thumb {
-          background-color: #4b5563; /* bg-gray-600 */
+          background-color: #333333; /* Dark gray */
           border-radius: 6px;
-          border: 3px solid #1f2937; /* border color matching track */
+          border: 3px solid #000000; /* border color matching track */
         }
 
         .dark-mode .scroll-container::-webkit-scrollbar-thumb:hover {
-          background-color: #6b7280; /* bg-gray-500 */
+          background-color: #444444; /* Slightly lighter gray on hover */
         }
 
         /* Watermark styles */
@@ -1236,6 +1211,7 @@ export function TVScreen() {
           object-fit: fill; /* Cover the entire container */
           filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
           opacity: 0.1; /* Default opacity for light mode */
+          transform: scaleX(-1); /* Flip horizontally */
         }
 
         /* Tiger Logo styles */
@@ -1249,13 +1225,13 @@ export function TVScreen() {
 
         /* Adjust watermark for dark mode */
         .dark-mode .watermark-backdrop {
-          filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
-          opacity: 0.2; /* Slightly higher opacity for dark mode */
+          filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+          opacity: 0.2; /* Lower opacity for dark mode */
         }
         
         .dark-mode .tiger-logo {
-          filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2)) blur(1px);
-          opacity: 0.075; /* Slightly higher opacity for dark mode */
+          filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1)) blur(3px);
+          opacity: 0.2; /* Lower opacity for dark mode */
         }
       `}</style>
     </div>
