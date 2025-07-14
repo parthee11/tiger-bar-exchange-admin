@@ -8,6 +8,7 @@ import { formatCurrency } from '../utils/formatters';
 import tigerWhiteLogo from '../assets/images/TIGER LOGO - WHITE.png';
 import tigerDarkLogo from '../assets/images/TIGER LOGO - DARK.png';
 import tvScreenBackdrop from '../assets/images/tv-screen-backdrop.png';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 /**
  * TV Screen component that displays drinks grouped by category for the selected branch
@@ -82,11 +83,12 @@ export function TVScreen() {
         type: 'drinks',
       });
 
-      // Fetch drink items for the selected branch with price information
+      // Fetch ALL drink items for the selected branch with price information
       const { data: itemsData } = await api.items.getItems({
         branch: selectedBranch._id,
         type: 'drinks',
         includePrices: true, // Include current and previous prices for trend display
+        noLimit: true, // Get all items without pagination for TV screen
       });
 
       // Update state in a batch to reduce renders
@@ -335,12 +337,12 @@ export function TVScreen() {
 
   // Set up blinking effect for items with trends
   useEffect(() => {
-    // Function to randomly select items with trends to blink
+    // Function to select items with trends to blink
     const updateBlinkingItems = () => {
       // Get all items with high or low trends (not neutral)
       const itemsWithTrends = allItems.filter((item) => {
         const trend = getTrendInfo(item);
-        return trend.show === true && trend.icon !== 'remove';
+        return trend.icon !== 'remove';
       });
 
       // If no items with trends, clear blinking items
@@ -349,17 +351,52 @@ export function TVScreen() {
         return;
       }
 
-      // Randomly select up to 3 items to blink every 2 seconds
-      const maxItems = Math.min(3, itemsWithTrends.length);
       const selectedItems = new Set();
-
-      // Shuffle the array of items with trends
-      const shuffled = [...itemsWithTrends].sort(() => 0.5 - Math.random());
-
-      // Select the first maxItems
-      for (let i = 0; i < maxItems; i++) {
-        if (i < shuffled.length) {
-          selectedItems.add(shuffled[i]._id);
+      
+      // If there are many trending items (>20), use a different strategy
+      if (itemsWithTrends.length > 20) {
+        // Group items by category for more organized blinking
+        const itemsByCategory = {};
+        
+        // Group items by their category
+        itemsWithTrends.forEach(item => {
+          const categoryId = item.category._id;
+          if (!itemsByCategory[categoryId]) {
+            itemsByCategory[categoryId] = [];
+          }
+          itemsByCategory[categoryId].push(item);
+        });
+        
+        // For each category, select a percentage of items to blink
+        Object.values(itemsByCategory).forEach(categoryItems => {
+          // Select ~75% of items in each category, but at least 3 if available
+          const numToSelect = Math.max(3, Math.ceil(categoryItems.length * 0.75));
+          
+          // Shuffle the items in this category
+          const shuffled = [...categoryItems].sort(() => 0.5 - Math.random());
+          
+          // Select the items
+          for (let i = 0; i < numToSelect && i < shuffled.length; i++) {
+            selectedItems.add(shuffled[i]._id);
+          }
+        });
+        
+        // Ensure we have at least some minimum number of blinking items
+        if (selectedItems.size < 15 && itemsWithTrends.length >= 15) {
+          const shuffled = [...itemsWithTrends].sort(() => 0.5 - Math.random());
+          for (let i = 0; i < 15 && i < shuffled.length; i++) {
+            selectedItems.add(shuffled[i]._id);
+          }
+        }
+      } else {
+        // For fewer items, select ~75% of them to blink
+        const maxItems = Math.ceil(itemsWithTrends.length * 0.75);
+        const shuffled = [...itemsWithTrends].sort(() => 0.5 - Math.random());
+        
+        for (let i = 0; i < maxItems; i++) {
+          if (i < shuffled.length) {
+            selectedItems.add(shuffled[i]._id);
+          }
         }
       }
 
@@ -377,8 +414,8 @@ export function TVScreen() {
       // Initial update
       updateBlinkingItems();
 
-      // Set up interval to update blinking items every 2 seconds
-      blinkingInterval.current = setInterval(updateBlinkingItems, 2000);
+      // Set up interval to update blinking items every 1 second (faster for more dynamic effect)
+      blinkingInterval.current = setInterval(updateBlinkingItems, 1000);
     }
 
     // Clean up on unmount or when dependencies change
@@ -462,43 +499,42 @@ export function TVScreen() {
     };
   }, [loading, error, groupedItems, autoScrollPaused]);
 
-  // Get trend icon and color based on price comparison with base price
+  // Get trend icon and color based on price comparison with stock price (floor price)
   const getTrendInfo = (item) => {
-    const currentPrice = getCurrentPrice(item);
-
-    // If price data is not available, don't show any trend
-    if (
-      item.floorPrice === undefined ||
-      item.floorPrice === null ||
-      typeof currentPrice !== 'number'
-    ) {
-      console.log(`No trend data for ${item.name}, not showing trend`);
-      return {
-        icon: 'remove',
-        color: darkMode ? '#9CA3AF' : '#888888', // Lighter gray for dark mode
-        show: false,
-      }; // No trend symbol
+    // If price data is not available, show neutral trend
+    if (!item.currentPrice || !item.floorPrice) {
+      return { 
+        icon: "remove", 
+        color: "#888888" 
+      };
     }
 
-    // Compare current price with base price (floor price)
-    if (currentPrice > item.floorPrice) {
-      return {
-        icon: 'trending-up',
-        color: darkMode ? '#34D399' : '#4CD964', // Adjusted green for dark mode
-        show: true,
-      }; // Green for up trend (price higher than base)
-    } else if (currentPrice < item.floorPrice) {
-      return {
-        icon: 'trending-down',
-        color: darkMode ? '#F87171' : '#FF3B30', // Adjusted red for dark mode
-        show: true,
-      }; // Red for down trend (price lower than base)
+    // If current price equals stock price (floor price), show neutral trend
+    if (item.currentPrice === item.floorPrice) {
+      return { 
+        icon: "remove", 
+        color: "#888888" // Gray for neutral trend
+      };
+    }
+
+    // Compare current price with stock price (floor price)
+    // Green if current price is higher than stock price (price is above base)
+    // Red if current price is lower than stock price (price is below base)
+    if (item.currentPrice > item.floorPrice) {
+      return { 
+        icon: "trending-up", 
+        color: "#4CD964" // Green for up trend (price above stock price)
+      };
+    } else if (item.currentPrice < item.floorPrice) {
+      return { 
+        icon: "trending-down", 
+        color: "#FF3B30" // Red for down trend (price below stock price)
+      };
     } else {
-      return {
-        icon: 'remove',
-        color: darkMode ? '#9CA3AF' : '#888888', // Lighter gray for dark mode
-        show: false, // Don't show neutral trend for blinking
-      }; // Neutral trend when price equals base price
+      return { 
+        icon: "remove", 
+        color: "#888888" // Gray for no change
+      };
     }
   };
 
@@ -570,10 +606,11 @@ export function TVScreen() {
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); 
           }
           50% { 
-            opacity: 1; /* Maintain full opacity */
-            transform: scale(1.1); 
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); 
-            filter: brightness(1.3);
+            opacity: 1; 
+            transform: scale(1.15); 
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6); 
+            filter: brightness(1.5);
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
           }
           100% { 
             opacity: 1; 
@@ -803,33 +840,31 @@ export function TVScreen() {
                       <div className="w-1/2">
                         <div className="flex flex-col">
                           <span className="font-medium" style={{ fontSize: '1.305rem' }}>{item.name}</span>
-                          <span className="text-xs" style={{ color: '#AAAAAA', fontSize: '1.015rem' }}>Price: {formatPrice(item.floorPrice)}</span>
+                          <span className="text-xs" style={{ color: '#AAAAAA', fontSize: '1.015rem' }}>Stock Price: {formatPrice(item.floorPrice)}</span>
                         </div>
                       </div>
 
                       <div className="w-1/2 flex items-center justify-center">
-                        {trend.show && (
-                          <div
-                            className="trend-icon"
-                            style={{
-                              color: trend.icon === 'trending-up'
-                                ? '#00FF00' // Bright green like in the image
-                                : trend.icon === 'trending-down'
-                                  ? '#FF0000' // Bright red like in the image
-                                  : '#757575', // Gray
-                              fontSize: '20px',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            {trend.icon === 'trending-up' ? (
-                              <span style={{ fontSize: '26px' }}>▲</span>
-                            ) : trend.icon === 'trending-down' ? (
-                              <span style={{ fontSize: '26px' }}>▼</span>
-                            ) : (
-                              <span style={{ fontSize: '26px' }}>—</span>
-                            )}
-                          </div>
-                        )}
+                        <div
+                          className="trend-icon"
+                          style={{
+                            color: trend.icon === 'trending-up'
+                              ? '#4CD964' // Green color from frontend
+                              : trend.icon === 'trending-down'
+                                ? '#FF3B30' // Red color from frontend
+                                : '#888888', // Gray color from frontend
+                            fontSize: '20px',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          {trend.icon === 'trending-up' ? (
+                            <TrendingUp size={24} />
+                          ) : trend.icon === 'trending-down' ? (
+                            <TrendingDown size={24} />
+                          ) : (
+                            <Minus size={24} />
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -874,8 +909,8 @@ export function TVScreen() {
                                 ? '#FFFFFF' // White text on red background for better contrast
                                 : '#FFFFFF', // White for neutral
                             display: 'inline-block',
-                            animation: trend.icon !== 'remove' && trend.show && blinkingItems.has(item._id)
-                              ? 'blink 0.8s ease-in-out infinite'
+                            animation: trend.icon !== 'remove' && blinkingItems.has(item._id)
+                              ? 'blink 0.7s ease-in-out infinite'
                               : isUpdated
                                 ? 'pulse 2s ease-in-out'
                                 : 'none',
@@ -920,7 +955,7 @@ export function TVScreen() {
           <span className="mr-2 text-blue-600">ℹ️</span>
           <span className="text-gray-300" style={{ fontSize: '0.75rem' }}>
             Prices fluctuate based on demand. "Low" shows the lowest price reached
-            today. "High" shows the highest price reached today. Base price is shown below each item name.
+            today. "High" shows the highest price reached today. Stock price is shown below each item name.
           </span>
         </div>
 
@@ -932,7 +967,7 @@ export function TVScreen() {
             ▲
           </span>
           <span className="text-gray-300" style={{ fontSize: '0.75rem' }}>
-            Green upward trend indicates current price is higher than the base price.
+            Green upward trend indicates current price is higher than the stock price.
           </span>
         </div>
 
@@ -944,7 +979,7 @@ export function TVScreen() {
             ▼
           </span>
           <span className="text-gray-300" style={{ fontSize: '0.75rem' }}>
-            Red downward trend indicates current price is lower than the base price.
+            Red downward trend indicates current price is lower than the stock price.
           </span>
         </div>
 
@@ -956,7 +991,7 @@ export function TVScreen() {
             —
           </span>
           <span className="text-gray-300" style={{ fontSize: '0.75rem' }}>
-            Horizontal line indicates current price is equal to the base price.
+            Horizontal line indicates current price is equal to the stock price.
           </span>
         </div>
 

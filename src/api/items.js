@@ -13,13 +13,24 @@ const itemsApi = {
     try {
       // If both branch and type are provided, use the specific endpoint
       if (params.branch && params.type) {
-        // Extract includePrices from params if it exists
-        const { includePrices, ...otherParams } = params;
+        // Extract includePrices and noLimit from params if they exist
+        const { includePrices, noLimit, ...otherParams } = params;
 
-        // Build the URL with the includePrices parameter if it's true
+        // Build the URL with query parameters
         let url = `/items/branch/${params.branch}/type/${params.type}`;
+        const queryParams = [];
+        
         if (includePrices) {
-          url += '?includePrices=true';
+          queryParams.push('includePrices=true');
+        }
+        
+        if (noLimit) {
+          queryParams.push('noLimit=true');
+        }
+        
+        // Add query string if we have parameters
+        if (queryParams.length > 0) {
+          url += '?' + queryParams.join('&');
         }
 
         // Make the API call with any remaining params as query parameters

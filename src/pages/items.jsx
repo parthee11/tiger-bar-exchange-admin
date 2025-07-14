@@ -21,6 +21,10 @@ export function Items() {
   const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     type: "food",
@@ -45,11 +49,27 @@ export function Items() {
     fetchBranches();
   }, []);
 
-  const fetchItems = async () => {
+  const fetchItems = async (page = 1, limit = itemsPerPage) => {
     setLoading(true);
     try {
-      const data = await api.items.getItems();
+      const data = await api.items.getItems({
+        page,
+        limit
+      });
       setItems(data.data || []);
+      
+      // Set the total count from the server response
+      if (data.count !== undefined) {
+        setTotalItems(data.count);
+      }
+      
+      // If we have pagination info from the server, update our state
+      if (data.pagination) {
+        // Update our pagination state
+        setCurrentPage(page);
+        setItemsPerPage(limit);
+      }
+      
       setError(null);
     } catch (err) {
       console.error("Error fetching items:", err);
@@ -568,15 +588,48 @@ export function Items() {
 
   // Handle search input change
   const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+    const newSearchTerm = e.target.value;
+    setSearchTerm(newSearchTerm);
+    
+    // Reset to page 1 when searching
+    setCurrentPage(1);
+    
+    // If search term is empty, fetch all items
+    if (!newSearchTerm.trim()) {
+      fetchItems(1, itemsPerPage);
+    }
+    // Note: We'll filter client-side for search since the backend doesn't support name search
   };
 
-  // Filter items based on search term
-  const displayItems = items.filter(item => 
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    fetchItems(page, itemsPerPage);
+  };
+
+  const handleItemsPerPageChange = (event) => {
+    const newLimit = parseInt(event.target.value, 10);
+    fetchItems(1, newLimit);
+  };
+
+  // Filter items based on search term (client-side filtering for search)
+  const filteredItems = searchTerm.trim() ? items.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.category && typeof item.category === 'object' && item.category.name.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  ) : items;
+  
+  // For search, we use client-side pagination
+  // For normal browsing, we use the server-side pagination
+  const isSearching = searchTerm.trim() !== '';
+  
+  // If searching, calculate client-side pagination
+  const indexOfLastItem = isSearching ? currentPage * itemsPerPage : (currentPage * itemsPerPage);
+  const indexOfFirstItem = isSearching ? indexOfLastItem - itemsPerPage : ((currentPage - 1) * itemsPerPage);
+  const displayItems = isSearching ? filteredItems.slice(indexOfFirstItem, indexOfLastItem) : filteredItems;
+  
+  // Calculate total pages
+  const effectiveTotalItems = isSearching ? filteredItems.length : totalItems;
+  const totalPages = Math.ceil(effectiveTotalItems / itemsPerPage);
 
   // Get category name from ID
   const getCategoryName = (categoryId) => {
@@ -620,7 +673,7 @@ export function Items() {
           className="max-w-sm"
         />
         <div className="text-sm text-muted-foreground">
-          {displayItems.length} {displayItems.length === 1 ? 'item' : 'items'} found
+          {effectiveTotalItems} {effectiveTotalItems === 1 ? 'item' : 'items'} found
         </div>
       </div>
       
@@ -634,7 +687,7 @@ export function Items() {
         <div className="flex justify-center">
           <p>Loading items...</p>
         </div>
-      ) : displayItems.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 text-center">
           <div className="mb-4 text-gray-400">
             <Package className="h-12 w-12 mx-auto" />
@@ -654,6 +707,14 @@ export function Items() {
           onDelete={openDeleteModal}
           getCategoryName={getCategoryName}
           formatPrice={formatPrice}
+          indexOfFirstItem={indexOfFirstItem}
+          indexOfLastItem={indexOfLastItem}
+          totalItems={effectiveTotalItems}
+          totalPages={totalPages}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={handleItemsPerPageChange}
         />
       )}
 
