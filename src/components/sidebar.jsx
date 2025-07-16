@@ -77,17 +77,18 @@ const navItems = [
     icon: TrendingDown,
     description: 'Trigger crash, timer, view logs',
   },
-  {
-    title: 'Loyalty Program',
-    href: '/loyalty',
-    icon: Users,
-    description: 'View users, assign manual rewards if needed',
-  },
+
   {
     title: 'TV Screen',
     href: '/tv-screen',
     icon: Tv,
     description: 'Display drinks menu on TV screen',
+  },
+  {
+    title: 'Settings',
+    href: '/settings',
+    icon: Settings,
+    description: 'System settings and configuration',
   },
 ];
 

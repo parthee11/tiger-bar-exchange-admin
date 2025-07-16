@@ -7,7 +7,6 @@ import {
   Package,
   Tag,
   Wine,
-  Gift,
   Table,
   Calendar,
   TrendingDown,
@@ -82,13 +81,7 @@ export function Dashboard() {
       path: '/market-crash',
       color: 'bg-red-100 text-red-700',
     },
-    {
-      title: 'Loyalty',
-      description: 'View users, assign manual rewards if needed',
-      icon: <Gift className="h-8 w-8" />,
-      path: '/loyalty',
-      color: 'bg-pink-100 text-pink-700',
-    },
+
     {
       title: 'Settings',
       description: 'Configure system settings',
