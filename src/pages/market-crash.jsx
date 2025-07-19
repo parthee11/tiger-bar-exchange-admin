@@ -251,7 +251,7 @@ export function MarketCrash() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Market Crash</h1>
         <p className="text-muted-foreground">
-          Trigger branch-specific market crash to drop prices
+          Trigger branch-specific market crash to drop prices based on percentage of base price
         </p>
       </div>
 

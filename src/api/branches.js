@@ -78,7 +78,7 @@ const branchesApi = {
   /**
    * Trigger a market crash for a branch
    * @param {string} id - Branch ID
-   * @param {number} crashPercentage - Percentage to reduce prices by (0-90)
+   * @param {number} crashPercentage - Percentage to reduce from base price/floor price (0-90)
    * @param {number} durationMinutes - Duration in minutes after which the crash will automatically end (1-120)
    * @returns {Promise} - Promise with market crash result
    */

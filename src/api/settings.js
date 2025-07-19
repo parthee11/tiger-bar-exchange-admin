@@ -170,6 +170,89 @@ const settingsApi = {
     });
     return response.data;
   },
+
+  /**
+   * Get lowest price drop type setting
+   * @returns {Promise} - Promise with lowest price drop type value ('value' or 'percentage')
+   */
+  getLowestPriceDropType: async () => {
+    try {
+      const response = await apiClient.get('/admin/settings/lowestPriceDropType');
+      return response.data;
+    } catch (error) {
+      // Return a default value if the setting doesn't exist
+      return { data: 'value' };
+    }
+  },
+
+  /**
+   * Update lowest price drop type setting
+   * @param {string} type - Type of drop calculation ('value' or 'percentage')
+   * @returns {Promise} - Promise with updated setting
+   */
+  updateLowestPriceDropType: async (type) => {
+    const response = await apiClient.put('/admin/settings/lowestPriceDropType', {
+      value: type,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get lowest price drop percentage setting
+   * @returns {Promise} - Promise with lowest price drop percentage value
+   */
+  getLowestPriceDropPercentage: async () => {
+    try {
+      const response = await apiClient.get('/admin/settings/lowestPriceDropPercentage');
+      return response.data;
+    } catch (error) {
+      // Return a default value if the setting doesn't exist
+      return { data: 50 };
+    }
+  },
+
+  /**
+   * Update lowest price drop percentage setting
+   * @param {number} percentage - Percentage of floor price that prices can drop below
+   * @returns {Promise} - Promise with updated setting
+   */
+  updateLowestPriceDropPercentage: async (percentage) => {
+    const response = await apiClient.put('/admin/settings/lowestPriceDropPercentage', {
+      value: percentage,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get price reset time setting for a specific branch
+   * @param {string} branchId - Branch ID
+   * @returns {Promise} - Promise with price reset time value
+   */
+  getPriceResetTime: async (branchId) => {
+    try {
+      const response = await apiClient.get('/admin/settings/priceResetTime', {
+        params: { branchId }
+      });
+      return response.data;
+    } catch (error) {
+      // Return a default value if the setting doesn't exist
+      return { data: '00:00' };
+    }
+  },
+
+  /**
+   * Update price reset time setting for a specific branch
+   * @param {string} branchId - Branch ID
+   * @param {string} time - Reset time in HH:MM format
+   * @returns {Promise} - Promise with updated setting
+   */
+  updatePriceResetTime: async (branchId, time) => {
+    const response = await apiClient.put('/admin/settings/priceResetTime', {
+      value: time,
+      branchId: branchId
+    });
+    return response.data;
+  },
 };
 
 export default settingsApi;
