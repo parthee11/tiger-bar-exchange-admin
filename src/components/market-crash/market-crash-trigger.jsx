@@ -33,7 +33,7 @@ export function MarketCrashTrigger({
       <CardHeader>
         <CardTitle>Trigger Market Crash</CardTitle>
         <CardDescription>
-          Initiate a market crash to drop prices for the selected branch
+          Initiate a market crash to drop prices based on percentage of base price (floor price)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -43,7 +43,8 @@ export function MarketCrashTrigger({
             <div>
               <h4 className="text-sm font-medium text-amber-800">Warning</h4>
               <p className="text-sm text-amber-700 mt-1">
-                Triggering a market crash will significantly reduce prices for all items in this branch.
+                Triggering a market crash will reduce prices based on the percentage of base price (floor price). 
+                Market crash has highest precedence and can override minimum price limits.
                 This action cannot be undone.
               </p>
             </div>
@@ -60,11 +61,11 @@ export function MarketCrashTrigger({
             onChange={onCrashPercentageChange}
             disabled={!selectedBranch || loading || isCrashActive}
           >
-            <SelectOption value="20">Low (20% toward floor price)</SelectOption>
-            <SelectOption value="35">Medium (35% toward floor price)</SelectOption>
-            <SelectOption value="50">High (50% toward floor price)</SelectOption>
-            <SelectOption value="75">Severe (75% toward floor price)</SelectOption>
-            <SelectOption value="90">Extreme (90% toward floor price)</SelectOption>
+            <SelectOption value="20">Low (20% off base price)</SelectOption>
+            <SelectOption value="35">Medium (35% off base price)</SelectOption>
+            <SelectOption value="50">High (50% off base price)</SelectOption>
+            <SelectOption value="75">Severe (75% off base price)</SelectOption>
+            <SelectOption value="90">Extreme (90% off base price)</SelectOption>
           </Select>
         </div>
 
