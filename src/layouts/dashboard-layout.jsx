@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Sidebar } from '../components/sidebar';
+import { MarketCrashIndicator } from '../components/market-crash-indicator';
 import { Menu, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
@@ -36,8 +37,9 @@ export function DashboardLayout({ children }) {
       </div>
       
       {/* Main content */}
-      <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+      <main className="flex-1 p-6 lg:p-8 overflow-y-auto relative">
         {children}
+        <MarketCrashIndicator />
       </main>
       
       {/* Overlay for mobile */}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import branchesApi from "../api/branches";
 import { useToast } from "../components/ui/use-toast";
+import { useMarketCrash } from "../contexts/market-crash-context";
 import { BranchSelector } from "../components/market-crash/branch-selector";
 import { MarketCrashTrigger } from "../components/market-crash/market-crash-trigger";
 import { MarketCrashStatus } from "../components/market-crash/market-crash-status";
@@ -15,6 +16,7 @@ import { ConfirmationModal } from "../components/market-crash/confirmation-modal
  */
 export function MarketCrash() {
   const { toast } = useToast();
+  const { refreshMarketCrashStatus } = useMarketCrash();
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedBranchData, setSelectedBranchData] = useState(null);
@@ -182,6 +184,9 @@ export function MarketCrash() {
       const branchResponse = await branchesApi.getBranch(selectedBranch);
       setSelectedBranchData(branchResponse.data);
 
+      // Refresh global market crash status to trigger visual effects
+      refreshMarketCrashStatus();
+
       setLoading(false);
     } catch (error) {
       console.error("Error triggering market crash:", error);
@@ -209,6 +214,9 @@ export function MarketCrash() {
       // Refresh branch data
       const branchResponse = await branchesApi.getBranch(selectedBranch);
       setSelectedBranchData(branchResponse.data);
+
+      // Refresh global market crash status to stop visual effects
+      refreshMarketCrashStatus();
 
       setLoading(false);
     } catch (error) {
