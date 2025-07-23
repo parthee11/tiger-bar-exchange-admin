@@ -205,9 +205,15 @@ export function MarketCrash() {
       setLoading(true);
       const response = await branchesApi.endMarketCrash(selectedBranch);
 
+      // Show enhanced success message with price reset information
+      const resetCount = response.data?.resetCount || 0;
+      const branchName = selectedBranchData?.name || 'selected branch';
+      
       toast({
-        title: "Success",
-        description: response.message || "Market crash ended successfully",
+        title: "Market Crash Ended",
+        description: resetCount > 0 
+          ? `Market crash ended for ${branchName}. ${resetCount} item prices have been reset to floor price.`
+          : response.message || "Market crash ended successfully",
         variant: "default",
       });
 
