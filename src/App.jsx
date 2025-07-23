@@ -18,7 +18,9 @@ import { ProtectedRoute } from './components/protected-route';
 import { PublicRoute } from './components/public-route';
 import { TVScreenRoute } from './components/tv-screen-route';
 import { AuthProvider } from './contexts/auth-context';
+import { MarketCrashProvider } from './contexts/market-crash-context';
 import { ConfirmationProvider } from './components/providers/confirmation-provider';
+import { MarketCrashEffects } from './components/market-crash-effects';
 import { Toaster } from './components/ui/toaster';
 import './App.css';
 
@@ -114,42 +116,46 @@ const routes = [
 function App() {
   return (
     <AuthProvider>
-      <ConfirmationProvider>
-        <Router>
-          <Routes>
-            {/* Authentication Routes */}
-            <Route path="/sign-in" element={<PublicRoute><SignIn /></PublicRoute>} />
-            {/* Sign-up route is hidden from UI but kept for future use */}
-            <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
-            
-            {/* TV Screen Route - Protected, requires authentication */}
-            <Route path="/tv-screen" element={<ProtectedRoute><TVScreen /></ProtectedRoute>} />
-            
-            {/* Protected Dashboard Routes - Generated from configuration */}
-            {routes.map(({ path, component: Component, protected: isProtected }) => (
-              <Route
-                key={path}
-                path={path}
-                element={
-                  isProtected ? (
-                    <ProtectedRoute>
-                      <DashboardLayout>
+      <MarketCrashProvider>
+        <ConfirmationProvider>
+          <Router>
+            <MarketCrashEffects>
+              <Routes>
+                {/* Authentication Routes */}
+                <Route path="/sign-in" element={<PublicRoute><SignIn /></PublicRoute>} />
+                {/* Sign-up route is hidden from UI but kept for future use */}
+                <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
+                
+                {/* TV Screen Route - Protected, requires authentication */}
+                <Route path="/tv-screen" element={<ProtectedRoute><TVScreen /></ProtectedRoute>} />
+                
+                {/* Protected Dashboard Routes - Generated from configuration */}
+                {routes.map(({ path, component: Component, protected: isProtected }) => (
+                  <Route
+                    key={path}
+                    path={path}
+                    element={
+                      isProtected ? (
+                        <ProtectedRoute>
+                          <DashboardLayout>
+                            <Component />
+                          </DashboardLayout>
+                        </ProtectedRoute>
+                      ) : (
                         <Component />
-                      </DashboardLayout>
-                    </ProtectedRoute>
-                  ) : (
-                    <Component />
-                  )
-                }
-              />
-            ))}
-            
-            {/* Fallback route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          <Toaster />
-        </Router>
-      </ConfirmationProvider>
+                      )
+                    }
+                  />
+                ))}
+                
+                {/* Fallback route */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </MarketCrashEffects>
+            <Toaster />
+          </Router>
+        </ConfirmationProvider>
+      </MarketCrashProvider>
     </AuthProvider>
   );
 }

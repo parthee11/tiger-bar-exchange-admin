@@ -815,8 +815,8 @@ export function TVScreen() {
                 <div className="w-1/2 text-center"></div>
               </div>
               <div className="w-1/2 flex items-center justify-between">
-                <div className="w-full text-center" style={{ color: '#FF0000', fontSize: '1.2325rem' }}>Lowest</div>
-                <div className="w-full text-center" style={{ color: '#00FF00', fontSize: '1.2325rem' }}>Highest</div>
+                <div className="w-full text-center" style={{ color: '#FF0000', fontSize: '1.2325rem' }}>Today's Low</div>
+                <div className="w-full text-center" style={{ color: '#00FF00', fontSize: '1.2325rem' }}>Today's High</div>
                 <div className="w-full text-center" style={{ color: '#FFFFFF', fontSize: '1.2325rem' }}>Current</div>
               </div>
             </div>
