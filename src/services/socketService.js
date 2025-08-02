@@ -51,8 +51,6 @@ class SocketService {
           }
         }
 
-        console.log('Connecting to socket server at:', url);
-
         // Create new socket connection with options
         const options = {
           transports: ['websocket', 'polling'],
@@ -64,15 +62,11 @@ class SocketService {
           timeout: 10000, // Increase connection timeout
         };
 
-        // Log connection attempt
-        console.log('Socket.io connection options:', options);
-
         // Create the socket connection
         this.socket = io(url, options);
 
         // Set up event handlers
         this.socket.on('connect', () => {
-          console.log('Socket connected:', this.socket.id);
           this.isConnected = true;
           resolve(this.socket);
         });
@@ -89,7 +83,6 @@ class SocketService {
         });
 
         this.socket.on('disconnect', (reason) => {
-          console.log('Socket disconnected:', reason);
           this.isConnected = false;
         });
 
@@ -99,7 +92,7 @@ class SocketService {
         });
 
         this.socket.io.on('reconnect_attempt', (attempt) => {
-          console.log(`Socket.io reconnect attempt: ${attempt}`);
+          // Reconnect attempt
         });
 
         this.socket.io.on('reconnect_failed', () => {
@@ -107,7 +100,6 @@ class SocketService {
         });
 
         this.socket.on('reconnect', (attemptNumber) => {
-          console.log('Socket reconnected after', attemptNumber, 'attempts');
           this.isConnected = true;
         });
 
@@ -148,7 +140,6 @@ class SocketService {
 
     const room = `branch:${branchId}`;
     this.socket.emit('subscribe', room);
-    console.log(`Subscribed to ${room}`);
   }
 
   /**
@@ -162,7 +153,6 @@ class SocketService {
 
     const room = `branch:${branchId}`;
     this.socket.emit('unsubscribe', room);
-    console.log(`Unsubscribed from ${room}`);
   }
 
   /**
