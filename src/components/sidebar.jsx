@@ -85,6 +85,12 @@ const navItems = [
     description: 'Display drinks menu on TV screen',
   },
   {
+    title: 'LED Ticker',
+    href: '/ticker-board',
+    icon: Tv,
+    description: 'LED-style scrolling price ticker',
+  },
+  {
     title: 'Settings',
     href: '/settings',
     icon: Settings,
