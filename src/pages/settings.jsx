@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { LoyaltySettings } from "../components/loyalty/loyalty-settings";
 import { PricingSettings } from "../components/pricing/pricing-settings";
+import { TVScreenSettings } from "../components/tv-screen/tv-screen-settings";
 import { LoadingSpinner } from "../components/loyalty/loyalty-components";
 import { useToast } from "../components/ui/use-toast";
 import settingsApi from "../api/settings";
@@ -56,6 +57,7 @@ export function Settings() {
           setLoyaltyEnabled={setLoyaltyEnabled}
         />
         <PricingSettings />
+        <TVScreenSettings />
       </div>
     </div>
   )

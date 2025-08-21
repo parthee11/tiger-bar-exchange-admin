@@ -5,6 +5,7 @@ import socketService from '../services/socketService';
 import branchesApi from '../api/branches';
 import api from '../api/api';
 import { formatCurrency } from '../utils/formatters';
+import { getSavedCategoryOrder, applyCategoryOrder } from '../utils/tvScreenSettings';
 import tigerWhiteLogo from '../assets/images/TIGER LOGO - WHITE.png';
 import tigerDarkLogo from '../assets/images/TIGER LOGO - DARK.png';
 import tvScreenBackdrop from '../assets/images/tv-screen-backdrop.png';
@@ -155,8 +156,6 @@ export function TVScreen() {
         setIsConnected(connected);
 
         if (connected) {
-          console.log('TV Screen: Socket connected successfully');
-
           // Get the first active branch
           const { data: branches } = await branchesApi.getBranches();
           const activeBranch = branches.find((branch) => branch.isActive);
@@ -228,22 +227,10 @@ export function TVScreen() {
 
     // Handle price updates
     const handlePriceUpdate = (data) => {
-      console.log(
-        `TV Screen: Received price update for ${data.name}: ${data.oldPrice} -> ${data.newPrice}`,
-        data,
-      );
-
       // Update the item in our state
       setAllItems((prevItems) => {
         const updatedItems = prevItems.map((item) => {
           if (item._id === data.itemId) {
-            // Update the item with new price data
-            console.log(`Updating item ${item.name} with new price data:`, {
-              oldPrice: data.oldPrice,
-              newPrice: data.newPrice,
-              highestDailyPrice: data.highestDailyPrice,
-              lowestDailyPrice: data.lowestDailyPrice,
-            });
 
             return {
               ...item,
@@ -255,18 +242,6 @@ export function TVScreen() {
           }
           return item;
         });
-
-        // Log the first updated item for debugging
-        if (updatedItems.length > 0) {
-          console.log('Sample updated item:', {
-            name: updatedItems[0].name,
-            currentPrice: updatedItems[0].currentPrice,
-            previousPrice: updatedItems[0].previousPrice,
-            floorPrice: updatedItems[0].floorPrice,
-            highestDailyPrice: updatedItems[0].highestDailyPrice,
-            lowestDailyPrice: updatedItems[0].lowestDailyPrice,
-          });
-        }
 
         return updatedItems;
       });
@@ -291,9 +266,6 @@ export function TVScreen() {
 
     // Handle market crash events
     const handleMarketCrash = (data) => {
-      console.log(
-        `TV Screen: Market crash event received for branch: ${data.branchId}`,
-      );
       if (data.branchId === selectedBranch._id) {
         setMarketCrashActive(true);
         // We don't need to call refreshData here, as the price updates will come through socket
@@ -302,9 +274,6 @@ export function TVScreen() {
 
     // Handle market crash end events
     const handleMarketCrashEnd = (data) => {
-      console.log(
-        `TV Screen: Market crash end event received for branch: ${data.branchId}`,
-      );
       if (data.branchId === selectedBranch._id) {
         setMarketCrashActive(false);
         // We don't need to call refreshData here, as the price updates will come through socket
@@ -330,9 +299,33 @@ export function TVScreen() {
   // Group items by category whenever allItems or categories change
   useEffect(() => {
     if (allItems.length > 0 && categories.length > 0) {
-      const grouped = groupItemsByCategory(allItems, categories);
+      // Apply custom category order from local storage
+      const savedOrder = getSavedCategoryOrder();
+      const orderedCategories = applyCategoryOrder(categories, savedOrder);
+      
+      const grouped = groupItemsByCategory(allItems, orderedCategories);
       setGroupedItems(grouped);
     }
+  }, [allItems, categories, groupItemsByCategory]);
+
+  // Listen for local storage changes to update category order in real-time
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'tv_screen_category_order' && allItems.length > 0 && categories.length > 0) {
+        // Re-apply the new category order
+        const savedOrder = getSavedCategoryOrder();
+        const orderedCategories = applyCategoryOrder(categories, savedOrder);
+        const grouped = groupItemsByCategory(allItems, orderedCategories);
+        setGroupedItems(grouped);
+      }
+    };
+
+    // Listen for storage events from other tabs/windows
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [allItems, categories, groupItemsByCategory]);
 
   // Set up blinking effect for items with trends

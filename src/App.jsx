@@ -108,6 +108,8 @@ const routes = [
   // TV Screen route is handled separately and is now protected
 ];
 
+import { TickerBoard } from './pages/ticker-board';
+
 /**
  * Main App component that sets up routing and global providers
  * 
@@ -128,6 +130,9 @@ function App() {
                 
                 {/* TV Screen Route - Protected, requires authentication */}
                 <Route path="/tv-screen" element={<ProtectedRoute><TVScreen /></ProtectedRoute>} />
+
+                {/* Ticker Board Route - Protected */}
+                <Route path="/ticker-board" element={<ProtectedRoute><DashboardLayout><TickerBoard /></DashboardLayout></ProtectedRoute>} />
                 
                 {/* Protected Dashboard Routes - Generated from configuration */}
                 {routes.map(({ path, component: Component, protected: isProtected }) => (
