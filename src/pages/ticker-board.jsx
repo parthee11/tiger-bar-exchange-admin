@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import socketService from '../services/socketService';
 import branchesApi from '../api/branches';
 import api from '../api/api';
-import { ArrowUpRight, ArrowDownRight, Minus, Maximize2, Minimize2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Maximize2, Minimize2 } from 'lucide-react';
 
 /**
  * LED-style stock ticker board for drink prices
@@ -21,6 +21,10 @@ export function TickerBoard() {
 
   const connectionCheckInterval = useRef(null);
   const rootRef = useRef(null);
+
+  // LED panel dimensions (virtual canvas)
+  const PANEL_WIDTH = 14340;
+  const PANEL_HEIGHT = 128;
 
   // Connect socket and pick an active branch
   useEffect(() => {
@@ -95,7 +99,6 @@ export function TickerBoard() {
   useEffect(() => {
     if (!isConnected || !selectedBranch) return;
     const handlePriceUpdate = (msg) => {
-      // msg: { itemId, oldPrice, newPrice, ... }
       setItems((prev) => prev.map((it) => (
         it._id === msg.itemId
           ? {
@@ -111,24 +114,33 @@ export function TickerBoard() {
     return () => remove && remove();
   }, [isConnected, selectedBranch]);
 
-  const tickerEntries = useMemo(() => {
-    return items.map((it) => {
-      const name = (it?.name || '').toUpperCase();
-      const current = typeof it?.currentPrice === 'number' ? it.currentPrice : it?.floorPrice || 0;
-      const prev = typeof it?.previousPrice === 'number' ? it.previousPrice : current;
-      const diff = +(current - prev).toFixed(2);
-      let tone = 'text-white';
-      if (diff > 0) tone = 'text-green-400';
-      else if (diff < 0) tone = 'text-red-400';
-      return {
-        id: it._id,
-        name,
-        current,
-        diff,
-        tone,
-      };
-    });
-  }, [items]);
+  const tickerEntries = useMemo(
+    () =>
+      items.map((it) => {
+        const name = (it?.name || '').toUpperCase();
+        const base = typeof it?.floorPrice === 'number' ? it.floorPrice : 0; // Base (stock) price
+        const current = typeof it?.currentPrice === 'number' ? it.currentPrice : base; // Fallback to base
+        const diff = +(current - base).toFixed(2); // Compare against base price
+
+        // TV screen color palette
+        const upColor = '#4CD964';
+        const downColor = '#FF3B30';
+        const neutralColor = '#FFFFFF';
+        let color = neutralColor;
+        if (diff > 0) color = upColor;
+        else if (diff < 0) color = downColor;
+
+        return {
+          id: it._id,
+          name,
+          base,
+          current,
+          diff,
+          color,
+        };
+      }),
+    [items]
+  );
 
   // Duplicate content to make seamless scroll
   const duplicated = useMemo(() => tickerEntries.concat(tickerEntries), [tickerEntries]);
@@ -172,7 +184,7 @@ export function TickerBoard() {
             Branch: <span className="text-white font-semibold">{selectedBranch?.name}</span>
           </div>
           <div className="flex items-center gap-3">
-            <div className={"text-xs " + (isConnected ? 'text-green-500' : 'text-red-500')}>
+            <div className={'text-xs ' + (isConnected ? 'text-green-500' : 'text-red-500')}>
               {isConnected ? 'LIVE' : 'OFFLINE'}
             </div>
             <button
@@ -186,23 +198,27 @@ export function TickerBoard() {
         </div>
       )}
 
-      {/* Exit button overlay in fullscreen */}
-      {isFullscreen && (
-        <button
-          onClick={toggleFullscreen}
-          className="absolute top-3 right-3 z-10 inline-flex items-center gap-2 text-xs px-3 py-1 rounded border border-neutral-700 text-neutral-200 bg-neutral-900/70 hover:bg-neutral-900"
-          title="Exit fullscreen"
-        >
-          <Minimize2 size={14} /> Exit
-        </button>
-      )}
-
-      {/* Centered ticker area */}
+      {/* Centered ticker area with virtual panel */}
       <div className="flex-1 flex items-center justify-center">
-        {/* Ticker rail */}
-        <div className="relative overflow-hidden select-none" style={{ height: 96, width: '100%' }}>
-          <div className="absolute inset-0 [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]" style={{ paddingLeft: '10vw', paddingRight: '10vw' }}>
-            <div className="animate-led-scroll whitespace-nowrap flex items-center gap-10 will-change-transform">
+        <div
+          className="relative overflow-hidden select-none"
+          style={{
+            width: PANEL_WIDTH,
+            height: PANEL_HEIGHT,
+            // Scale by height to fill 100% of the screen height in fullscreen
+            transform: isFullscreen ? 'scale(' + (window.innerHeight / PANEL_HEIGHT) + ')' : 'none',
+            transformOrigin: 'center',
+          }}
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              // Soft side fade for LED look; keep full content visible
+              WebkitMaskImage: 'linear-gradient(to right, transparent, black 2%, black 98%, transparent)',
+              maskImage: 'linear-gradient(to right, transparent, black 2%, black 98%, transparent)'
+            }}
+          >
+            <div className="animate-led-scroll whitespace-nowrap flex items-center" style={{ gap: 40, height: '100%' }}>
               {duplicated.map((e, idx) => (
                 <TickerChip key={e.id + '-' + idx} entry={e} />
               ))}
@@ -219,12 +235,12 @@ export function TickerBoard() {
         }
         .animate-led-scroll {
           animation: led-scroll 40s linear infinite;
+          height: 100%;
         }
         .led-glow {
           text-shadow: 0 0 6px currentColor, 0 0 12px currentColor, 0 0 18px rgba(255,255,255,0.15);
         }
         .seven-seg {
-          /* Approximate seven-seg feel using mono + tracking + glow */
           font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
           letter-spacing: 0.08em;
         }
@@ -234,39 +250,35 @@ export function TickerBoard() {
 }
 
 function TickerChip({ entry }) {
-  const { name, current, diff, tone } = entry;
+  const { name, base, current, diff, color } = entry;
   const isUp = diff > 0;
   const isDown = diff < 0;
 
   return (
-    <div className="px-6 py-4 rounded-md border border-neutral-800 bg-[rgb(8,8,8)]/80 shadow-[inset_0_0_8px_rgba(0,0,0,0.8)] flex items-center gap-4">
-      {/* Symbol */}
-      <div className="text-white font-extrabold text-xl tracking-wide led-glow">
-        {name}
+    <div className="px-6 py-2 bg-[rgb(8,8,8)]/80 flex items-center justify-between gap-6 h-full" style={{ color }}>
+      {/* Item details */}
+      <div className="flex flex-col justify-center">
+        <div className="font-extrabold text-base tracking-wide leading-none text-current">{name}</div>
+        <div className="text-xs leading-none mt-1 opacity-80">Base: ₹{Number(base).toFixed(2)}</div>
       </div>
 
-      {/* Price with up indicator on top, down on bottom (stacked) */}
-      <div className="flex flex-col leading-none">
-        <div className="flex items-center gap-1 seven-seg text-2xl font-bold led-glow">
-          <span className={isUp ? 'text-green-400' : 'text-neutral-400'}>
-            <ArrowUpRight className="inline -mb-1" size={18} />
-          </span>
-          <span className={tone}>₹{Number(current).toFixed(2)}</span>
-        </div>
-        <div className="flex items-center gap-1 seven-seg text-base led-glow mt-1">
-          <span className={isDown ? 'text-red-400' : 'text-neutral-500'}>
-            <ArrowDownRight className="inline -mb-1" size={16} />
-          </span>
-          <span className={isDown ? 'text-red-400' : isUp ? 'text-green-400' : 'text-white'}>
-            {isUp ? `+${Math.abs(diff).toFixed(2)}` : isDown ? `-${Math.abs(diff).toFixed(2)}` : <span className="inline-flex items-center gap-1"><Minus size={14} />0.00</span>}
-          </span>
-        </div>
+      {/* Trend icon then current price, both in the same color */}
+      <div className="flex items-center justify-center leading-none">
+        {isUp ? (
+          <TrendingUp size={18} />
+        ) : isDown ? (
+          <TrendingDown size={18} />
+        ) : (
+          <Minus size={18} />
+        )}
+        <div className="seven-seg text-xl font-bold ml-2">₹{Number(current).toFixed(2)}</div>
       </div>
 
       {/* Divider dot */}
-      <div className="w-2 h-2 rounded-full bg-neutral-700 ml-2" />
+      <div className="w-1.5 h-1.5 rounded-full bg-neutral-700 ml-2" />
     </div>
   );
 }
 
 export default TickerBoard;
+
