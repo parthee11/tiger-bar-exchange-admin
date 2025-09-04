@@ -21,10 +21,19 @@ export function TickerBoard() {
 
   const connectionCheckInterval = useRef(null);
   const rootRef = useRef(null);
+  const viewportRef = useRef(null);
 
-  // LED panel dimensions (virtual canvas)
-  const PANEL_WIDTH = 14340;
-  const PANEL_HEIGHT = 128;
+  // Visual tuning
+  const ROW_HEIGHT = 64; // px height of the ticker row (kept constant for crisp fonts)
+  const BASE_DURATION = 40; // scroll loop seconds at 1x speed
+  const GAP = 32; // px gap between chips
+
+  // Controls
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+
+  // Ensure at least N items visible in fullscreen
+  const TARGET_VISIBLE = 20;
+  const [chipWidth, setChipWidth] = useState(null);
 
   // Connect socket and pick an active branch
   useEffect(() => {
@@ -145,19 +154,29 @@ export function TickerBoard() {
   // Duplicate content to make seamless scroll
   const duplicated = useMemo(() => tickerEntries.concat(tickerEntries), [tickerEntries]);
 
-  const enterFullscreen = async () => {
-    const el = rootRef.current || document.documentElement;
-    if (el.requestFullscreen) await el.requestFullscreen();
-    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-  };
-  const exitFullscreen = async () => {
-    if (document.exitFullscreen) await document.exitFullscreen();
-    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-  };
-  const toggleFullscreen = () => {
-    if (isFullscreen) exitFullscreen();
-    else enterFullscreen();
-  };
+  // Compute chip width to ensure >= TARGET_VISIBLE items on screen in fullscreen
+  useEffect(() => {
+    const computeChipWidth = () => {
+      if (!viewportRef.current) {
+        setChipWidth(null);
+        return;
+      }
+      if (!isFullscreen) {
+        setChipWidth(null);
+        return;
+      }
+      const vw = viewportRef.current.clientWidth || window.innerWidth;
+      const widthForTarget = (vw - (TARGET_VISIBLE - 1) * GAP) / TARGET_VISIBLE;
+      // Keep chips at least wide enough for icon + price + padding (~80-100px), but small to allow 20 on narrow screens
+      const minChip = 80; // px
+      const maxChip = 320; // safety cap
+      setChipWidth(Math.max(minChip, Math.min(maxChip, Math.floor(widthForTarget))));
+    };
+
+    computeChipWidth();
+    window.addEventListener('resize', computeChipWidth);
+    return () => window.removeEventListener('resize', computeChipWidth);
+  }, [isFullscreen]);
 
   if (loading) {
     return (
@@ -180,35 +199,48 @@ export function TickerBoard() {
       {/* Status bar (hidden in fullscreen) */}
       {!isFullscreen && (
         <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-800">
-          <div className="text-sm text-neutral-400">
-            Branch: <span className="text-white font-semibold">{selectedBranch?.name}</span>
+          <div className="flex items-center gap-6">
+            <div className="text-sm text-neutral-400">
+              Branch: <span className="text-white font-semibold">{selectedBranch?.name}</span>
+            </div>
+            {/* Speed control (hidden in fullscreen) */}
+            <div className="flex items-center gap-2 text-neutral-300">
+              <label htmlFor="speedRange" className="text-xs">Speed</label>
+              <input
+                id="speedRange"
+                type="range"
+                min="0.25"
+                max="3"
+                step="0.25"
+                value={speedMultiplier}
+                onChange={(e) => setSpeedMultiplier(parseFloat(e.target.value))}
+                className="w-40 accent-green-500"
+                title={`Speed: ${speedMultiplier.toFixed(2)}x`}
+              />
+              <span className="text-xs tabular-nums">{speedMultiplier.toFixed(2)}x</span>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className={'text-xs ' + (isConnected ? 'text-green-500' : 'text-red-500')}>
               {isConnected ? 'LIVE' : 'OFFLINE'}
             </div>
             <button
-              onClick={toggleFullscreen}
+              onClick={() => (isFullscreen ? document.exitFullscreen?.() : rootRef.current?.requestFullscreen?.())}
               className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded border border-neutral-700 text-neutral-200 hover:bg-neutral-900"
-              title="Enter fullscreen"
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
             >
-              <Maximize2 size={14} /> Full screen
+              {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />} {isFullscreen ? 'Exit' : 'Full screen'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Centered ticker area with virtual panel */}
+      {/* Centered ticker area */}
       <div className="flex-1 flex items-center justify-center">
         <div
-          className="relative overflow-hidden select-none"
-          style={{
-            width: PANEL_WIDTH,
-            height: PANEL_HEIGHT,
-            // Scale by height to fill 100% of the screen height in fullscreen
-            transform: isFullscreen ? 'scale(' + (window.innerHeight / PANEL_HEIGHT) + ')' : 'none',
-            transformOrigin: 'center',
-          }}
+          ref={viewportRef}
+          className="relative overflow-hidden select-none w-full"
+          style={{ height: ROW_HEIGHT }}
         >
           <div
             className="absolute inset-0"
@@ -218,9 +250,16 @@ export function TickerBoard() {
               maskImage: 'linear-gradient(to right, transparent, black 2%, black 98%, transparent)'
             }}
           >
-            <div className="animate-led-scroll whitespace-nowrap flex items-center" style={{ gap: 40, height: '100%' }}>
+            <div
+              className="animate-led-scroll whitespace-nowrap flex items-stretch"
+              style={{
+                gap: GAP,
+                height: '100%',
+                animationDuration: (BASE_DURATION / Math.max(0.01, speedMultiplier)) + 's',
+              }}
+            >
               {duplicated.map((e, idx) => (
-                <TickerChip key={e.id + '-' + idx} entry={e} />
+                <TickerChip key={e.id + '-' + idx} entry={e} chipWidth={chipWidth} rowHeight={ROW_HEIGHT} />
               ))}
             </div>
           </div>
@@ -234,8 +273,10 @@ export function TickerBoard() {
           100% { transform: translateX(-50%); }
         }
         .animate-led-scroll {
+          /* Duration will be overridden inline based on speedMultiplier */
           animation: led-scroll 40s linear infinite;
           height: 100%;
+          will-change: transform; /* smoother animation */
         }
         .led-glow {
           text-shadow: 0 0 6px currentColor, 0 0 12px currentColor, 0 0 18px rgba(255,255,255,0.15);
@@ -243,42 +284,64 @@ export function TickerBoard() {
         .seven-seg {
           font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
           letter-spacing: 0.08em;
+          text-rendering: optimizeLegibility;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
         }
       `}</style>
     </div>
   );
 }
 
-function TickerChip({ entry }) {
+function TickerChip({ entry, chipWidth, rowHeight }) {
   const { name, base, current, diff, color } = entry;
   const isUp = diff > 0;
   const isDown = diff < 0;
 
+  // Typography scales with chip width to prevent overlap
+  const cw = chipWidth || 180; // fallback when not fullscreen
+  const nameSize = Math.max(10, Math.min(16, Math.round(cw * 0.18)));
+  const baseSize = Math.max(9, Math.min(12, Math.round(cw * 0.12)));
+  const priceSize = Math.max(12, Math.min(22, Math.round(cw * 0.28)));
+  const iconSize = Math.max(12, Math.min(20, Math.round(cw * 0.22)));
+
   return (
-    <div className="px-6 py-2 bg-[rgb(8,8,8)]/80 flex items-center justify-between gap-6 h-full" style={{ color }}>
+    <div
+      className="box-border px-3 bg-[rgb(8,8,8)]/80 flex items-center justify-between gap-3 h-full flex-none"
+      style={{ color, width: cw, minWidth: cw }}
+    >
       {/* Item details */}
-      <div className="flex flex-col justify-center">
-        <div className="font-extrabold text-base tracking-wide leading-none text-current">{name}</div>
-        <div className="text-xs leading-none mt-1 opacity-80">Base: ₹{Number(base).toFixed(2)}</div>
+      <div className="flex flex-col justify-center min-w-0">
+        <div
+          className="font-extrabold leading-tight text-current whitespace-nowrap overflow-hidden text-ellipsis"
+          style={{ fontSize: nameSize }}
+          title={name}
+        >
+          {name}
+        </div>
+        <div className="leading-tight opacity-80 whitespace-nowrap" style={{ fontSize: baseSize }}>
+          Base: ₹{Number(base).toFixed(2)}
+        </div>
       </div>
 
       {/* Trend icon then current price, both in the same color */}
-      <div className="flex items-center justify-center leading-none">
+      <div className="flex items-center justify-center leading-none flex-shrink-0">
         {isUp ? (
-          <TrendingUp size={18} />
+          <TrendingUp size={iconSize} />
         ) : isDown ? (
-          <TrendingDown size={18} />
+          <TrendingDown size={iconSize} />
         ) : (
-          <Minus size={18} />
+          <Minus size={iconSize} />
         )}
-        <div className="seven-seg text-xl font-bold ml-2">₹{Number(current).toFixed(2)}</div>
+        <div className="seven-seg font-bold ml-2 whitespace-nowrap" style={{ fontSize: priceSize }}>
+          ₹{Number(current).toFixed(2)}
+        </div>
       </div>
 
       {/* Divider dot */}
-      <div className="w-1.5 h-1.5 rounded-full bg-neutral-700 ml-2" />
+      <div className="w-1.5 h-1.5 rounded-full bg-neutral-700 ml-2 flex-shrink-0" />
     </div>
   );
 }
 
 export default TickerBoard;
-
