@@ -10,6 +10,7 @@ import { Save, Check, Clock, MapPin } from "lucide-react";
 import { useToast } from "../ui/use-toast";
 import settingsApi from "../../api/settings";
 import branchesApi from "../../api/branches";
+import apiClient from "../../api";
 
 /**
  * PricingSettings component for managing pricing-related settings
@@ -442,6 +443,47 @@ export function PricingSettings() {
     }
   };
 
+  // Manual reset state and handler
+  const [resetting, setResetting] = useState(false);
+  const handleManualReset = async () => {
+    if (!selectedBranch) {
+      setError("Please select a branch first.");
+      toast({
+        variant: "destructive",
+        title: "No Branch Selected",
+        description: "Please select a branch first."
+      });
+      return;
+    }
+
+    const branchName = branches.find(b => b._id === selectedBranch)?.name || 'selected branch';
+    const confirmed = window.confirm(`Are you sure you want to reset all prices for ${branchName} to base price? This will set current, lowest, and highest daily prices to the floor price.`);
+    if (!confirmed) return;
+
+    try {
+      setResetting(true);
+      const response = await apiClient.post(`/pricing/debug/reset/${selectedBranch}`);
+      const resetCount = response.data?.data?.resetCount ?? response.data?.resetCount ?? 0;
+
+      toast({
+        variant: "success",
+        title: "Prices Reset",
+        description: `Reset ${resetCount} items to base price for ${branchName}.`,
+        icon: <Check className="h-4 w-4" />
+      });
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || "Failed to reset prices. Please try again.";
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Reset Failed",
+        description: errorMessage
+      });
+    } finally {
+      setResetting(false);
+    }
+  };
+
   // Loading spinner component
   const LoadingSpinner = ({ size = "default" }) => (
     <div className={`animate-spin rounded-full border-2 border-gray-200 border-t-blue-600 ${
@@ -827,6 +869,22 @@ export function PricingSettings() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Manual reset button */}
+      {selectedBranch && (
+        <div className="flex items-center justify-end">
+          <Button size="sm" onClick={handleManualReset} disabled={resetting || loading}>
+            {resetting ? (
+              <>
+                <LoadingSpinner size="sm" />
+                <span className="ml-2">Resetting...</span>
+              </>
+            ) : (
+              <>Reset Prices Now</>
+            )}
+          </Button>
         </div>
       )}
 

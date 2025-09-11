@@ -11,6 +11,7 @@ import { Branches } from './pages/branches';
 import { Categories } from './pages/categories';
 import { Loyalty } from './pages/loyalty';
 import { Settings } from './pages/settings';
+import { Highlights } from './pages/highlights';
 import { SignIn } from './pages/sign-in';
 import TableManagement from './pages/tables';
 import { TVScreen } from './pages/tv-screen';
@@ -105,6 +106,12 @@ const routes = [
     protected: true,
     title: 'Settings',
   },
+  {
+    path: '/highlights',
+    component: Highlights,
+    protected: true,
+    title: 'Highlights',
+  },
   // TV Screen route is handled separately and is now protected
 ];
 
@@ -121,42 +128,40 @@ function App() {
       <MarketCrashProvider>
         <ConfirmationProvider>
           <Router>
-            <MarketCrashEffects>
-              <Routes>
-                {/* Authentication Routes */}
-                <Route path="/sign-in" element={<PublicRoute><SignIn /></PublicRoute>} />
-                {/* Sign-up route is hidden from UI but kept for future use */}
-                <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
-                
-                {/* TV Screen Route - Protected, requires authentication */}
-                <Route path="/tv-screen" element={<ProtectedRoute><TVScreen /></ProtectedRoute>} />
+            <Routes>
+              {/* Authentication Routes */}
+              <Route path="/sign-in" element={<PublicRoute><SignIn /></PublicRoute>} />
+              {/* Sign-up route is hidden from UI but kept for future use */}
+              <Route path="/sign-up" element={<Navigate to="/sign-in" replace />} />
+              
+              {/* TV Screen Route - Protected, requires authentication */}
+              <Route path="/tv-screen" element={<ProtectedRoute><MarketCrashEffects><TVScreen /></MarketCrashEffects></ProtectedRoute>} />
 
-                {/* Ticker Board Route - Protected */}
-                <Route path="/ticker-board" element={<ProtectedRoute><DashboardLayout><TickerBoard /></DashboardLayout></ProtectedRoute>} />
-                
-                {/* Protected Dashboard Routes - Generated from configuration */}
-                {routes.map(({ path, component: Component, protected: isProtected }) => (
-                  <Route
-                    key={path}
-                    path={path}
-                    element={
-                      isProtected ? (
-                        <ProtectedRoute>
-                          <DashboardLayout>
-                            <Component />
-                          </DashboardLayout>
-                        </ProtectedRoute>
-                      ) : (
-                        <Component />
-                      )
-                    }
-                  />
-                ))}
-                
-                {/* Fallback route */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </MarketCrashEffects>
+              {/* Ticker Board Route - Protected */}
+              <Route path="/ticker-board" element={<ProtectedRoute><DashboardLayout><TickerBoard /></DashboardLayout></ProtectedRoute>} />
+              
+              {/* Protected Dashboard Routes - Generated from configuration */}
+              {routes.map(({ path, component: Component, protected: isProtected }) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={
+                    isProtected ? (
+                      <ProtectedRoute>
+                        <DashboardLayout>
+                          <Component />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    ) : (
+                      <Component />
+                    )
+                  }
+                />
+              ))}
+              
+              {/* Fallback route */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
             <Toaster />
           </Router>
         </ConfirmationProvider>
