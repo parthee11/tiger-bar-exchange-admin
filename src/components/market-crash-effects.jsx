@@ -1,5 +1,6 @@
 import { useMarketCrash } from '../contexts/market-crash-context';
 import PropTypes from 'prop-types';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * Market Crash Visual Effects Component
@@ -9,6 +10,16 @@ import PropTypes from 'prop-types';
  */
 export function MarketCrashEffects({ children }) {
   const { isAnyBranchCrashing } = useMarketCrash();
+  const [showBanner, setShowBanner] = useState(false);
+  const prevCrashRef = useRef(false);
+
+  // Show the banner once when crash becomes active
+  useEffect(() => {
+    if (!prevCrashRef.current && isAnyBranchCrashing) {
+      setShowBanner(true);
+    }
+    prevCrashRef.current = isAnyBranchCrashing;
+  }, [isAnyBranchCrashing]);
 
   if (!isAnyBranchCrashing) {
     return <>{children}</>;
@@ -16,6 +27,40 @@ export function MarketCrashEffects({ children }) {
 
   return (
     <div className="relative min-h-screen">
+      {/* One-time sliding banner across the middle (50% screen height) */}
+      {showBanner && (
+        <>
+          <style>{`
+            @keyframes marketCrashSlide {
+              0% { transform: translateX(100vw); }
+              100% { transform: translateX(-100vw); }
+            }
+          `}</style>
+          <div
+            className="fixed left-0 right-0 z-50 pointer-events-none flex items-center justify-center"
+            style={{ top: '25vh', height: '50vh' }}
+          >
+            <div
+              style={{
+                width: '100vw',
+                height: '100%',
+                backgroundColor: '#dc2626', // red-600
+                color: '#ffffff',
+                fontWeight: 900,
+                fontSize: '10vw',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                animation: 'marketCrashSlide 2.5s linear 1',
+              }}
+              onAnimationEnd={() => setShowBanner(false)}
+            >
+              MARKET CRASH
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Red blinking overlay for entire screen */}
       <div 
         className="fixed inset-0 pointer-events-none z-40 market-crash-blink-overlay"

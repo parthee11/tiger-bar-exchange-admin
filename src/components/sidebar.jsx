@@ -91,6 +91,12 @@ const navItems = [
     description: 'LED-style scrolling price ticker',
   },
   {
+    title: 'Highlights',
+    href: '/highlights',
+    icon: Settings,
+    description: 'Curate trending, top gainers, and top losers per branch',
+  },
+  {
     title: 'Settings',
     href: '/settings',
     icon: Settings,

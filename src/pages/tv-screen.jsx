@@ -1,6 +1,6 @@
 /* eslint-disable complexity */
 /* eslint-disable max-lines-per-function */
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import socketService from '../services/socketService';
 import branchesApi from '../api/branches';
 import api from '../api/api';
@@ -31,6 +31,8 @@ export function TVScreen() {
   // Always dark mode, no toggle needed
   const darkMode = true;
   const [blinkingItems, setBlinkingItems] = useState(new Set());
+  // Curated highlights for TV screen (managed from Admin > Highlights)
+  const [highlights, setHighlights] = useState({ trending: [], topGainers: [], topLosers: [] });
 
   // Ref for the interval that checks connection status
   const connectionCheckInterval = useRef(null);
@@ -68,7 +70,7 @@ export function TVScreen() {
     return grouped;
   }, []);
 
-  // Fetch categories and items
+  // Fetch categories, items and curated highlights
   const fetchCategoriesAndItems = useCallback(async () => {
     if (!selectedBranch) return;
 
@@ -92,9 +94,14 @@ export function TVScreen() {
         noLimit: true, // Get all items without pagination for TV screen
       });
 
+      // Fetch curated highlights for this branch
+      const highlightsResp = await api.settings.getHighlights(selectedBranch._id);
+      const highlightsValue = highlightsResp?.data || { trending: [], topGainers: [], topLosers: [] };
+
       // Update state in a batch to reduce renders
       setCategories(categoriesData);
       setAllItems(itemsData || []);
+      setHighlights(highlightsValue);
 
       // Mark initial data as loaded
       initialDataLoadedRef.current = true;
@@ -190,9 +197,17 @@ export function TVScreen() {
     }, 5000);
 
     // Set up data refresh interval (every 5 minutes)
-    dataRefreshInterval.current = setInterval(() => {
+    dataRefreshInterval.current = setInterval(async () => {
       if (currentBranchIdRef.current) {
+        // Refresh branch status
         refreshData(currentBranchIdRef.current);
+        // Refresh curated highlights for the current branch so TV updates without reload
+        try {
+          const resp = await api.settings.getHighlights(currentBranchIdRef.current);
+          setHighlights(resp?.data || { trending: [], topGainers: [], topLosers: [] });
+        } catch (e) {
+          // no-op; keep existing highlights on failure
+        }
       }
     }, 5 * 60 * 1000);
 
@@ -307,6 +322,53 @@ export function TVScreen() {
       setGroupedItems(grouped);
     }
   }, [allItems, categories, groupItemsByCategory]);
+
+  // Derive highlighted item objects from IDs and allItems
+  const highlightedItems = useMemo(() => {
+    if (!allItems?.length) return { trending: [], topGainers: [], topLosers: [] };
+    const map = new Map(allItems.map((it) => [it._id, it]));
+    const pick = (ids = []) => ids.map((id) => map.get(id)).filter(Boolean);
+    return {
+      trending: pick(highlights.trending),
+      topGainers: pick(highlights.topGainers),
+      topLosers: pick(highlights.topLosers),
+    };
+  }, [allItems, highlights]);
+
+  // Build highlight sections to render like categories (order: Trending, Top Gainers, Top Losers)
+  const highlightedSections = useMemo(() => {
+    const sections = [];
+    // Trending first
+    if (highlightedItems.trending.length) {
+      sections.push({
+        title: 'Trending',
+        categoryId: 'highlight-trending',
+        data: highlightedItems.trending,
+      });
+    }
+    // Then Top Gainers
+    if (highlightedItems.topGainers.length) {
+      sections.push({
+        title: 'Top Gainers',
+        categoryId: 'highlight-top-gainers',
+        data: highlightedItems.topGainers,
+      });
+    }
+    // Then Top Losers
+    if (highlightedItems.topLosers.length) {
+      sections.push({
+        title: 'Top Losers',
+        categoryId: 'highlight-top-losers',
+        data: highlightedItems.topLosers,
+      });
+    }
+    return sections;
+  }, [highlightedItems]);
+
+  // Combine highlights with normal grouped categories
+  const combinedSections = useMemo(() => {
+    return [...highlightedSections, ...groupedItems];
+  }, [highlightedSections, groupedItems]);
 
   // Listen for local storage changes to update category order in real-time
   useEffect(() => {
@@ -785,9 +847,9 @@ export function TVScreen() {
         </button>
       </div>
 
-      {/* Drinks grouped by category */}
+      {/* Drinks grouped by category (includes highlights at the top) */}
       <div className="flex flex-col gap-6">
-        {groupedItems.map((section) => (
+        {combinedSections.map((section) => (
           <div
             key={section.categoryId}
             className="relative rounded-lg shadow-sm w-full border border-gray-800"

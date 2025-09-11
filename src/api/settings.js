@@ -253,6 +253,38 @@ const settingsApi = {
     });
     return response.data;
   },
+
+  /**
+   * Get curated highlights for a branch
+   * @param {string} branchId - Branch ID
+   * @returns {Promise<{data: {trending: string[], topGainers: string[], topLosers: string[]}}>} 
+   */
+  getHighlights: async (branchId) => {
+    try {
+      const response = await apiClient.get('/admin/settings/highlights', {
+        params: { branchId }
+      });
+      // The admin getSetting returns { success, data }
+      return response.data;
+    } catch (error) {
+      // Default empty structure if not set yet
+      return { data: { trending: [], topGainers: [], topLosers: [] } };
+    }
+  },
+
+  /**
+   * Update curated highlights for a branch
+   * @param {string} branchId - Branch ID
+   * @param {{trending: string[], topGainers: string[], topLosers: string[]}} value
+   * @returns {Promise}
+   */
+  updateHighlights: async (branchId, value) => {
+    const response = await apiClient.put('/admin/settings/highlights', {
+      branchId,
+      value,
+    });
+    return response.data;
+  },
 };
 
 export default settingsApi;
