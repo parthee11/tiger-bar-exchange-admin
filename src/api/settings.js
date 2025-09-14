@@ -11,7 +11,7 @@ const settingsApi = {
   getLoyaltyProgramEnabled: async () => {
     try {
       // Try the new settings endpoint first
-      const response = await apiClient.get('/admin/settings/loyalty-enabled');
+      const response = await apiClient.get('/admin/settings/loyaltyProgramEnabled');
       return response.data;
     } catch (error) {
       // Fallback to the old endpoint if the new one fails
@@ -33,7 +33,7 @@ const settingsApi = {
   updateLoyaltyProgramEnabled: async (enabled) => {
     try {
       // Try the new settings endpoint first
-      const response = await apiClient.put('/admin/settings/loyalty-enabled', {
+      const response = await apiClient.put('/admin/settings/loyaltyProgramEnabled', {
         value: enabled,
       });
       return response.data;
@@ -54,7 +54,7 @@ const settingsApi = {
     try {
       // Try the new settings endpoint first
       const response = await apiClient.get(
-        '/admin/settings/loyalty-percentage',
+        '/admin/settings/loyaltyPercentage',
       );
       return response.data;
     } catch (error) {
@@ -78,7 +78,7 @@ const settingsApi = {
     try {
       // Try the new settings endpoint first
       const response = await apiClient.put(
-        '/admin/settings/loyalty-percentage',
+        '/admin/settings/loyaltyPercentage',
         {
           value: percentage,
         },

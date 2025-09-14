@@ -14,6 +14,8 @@ import {
   Wine,
   Table,
   Tv,
+  Sparkles,
+  ScrollText,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { Button } from './ui/button';
@@ -87,13 +89,13 @@ const navItems = [
   {
     title: 'LED Ticker',
     href: '/ticker-board',
-    icon: Tv,
+    icon: ScrollText,
     description: 'LED-style scrolling price ticker',
   },
   {
     title: 'Highlights',
     href: '/highlights',
-    icon: Settings,
+    icon: Sparkles,
     description: 'Curate trending, top gainers, and top losers per branch',
   },
   {
@@ -162,10 +164,10 @@ export function Sidebar() {
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-primary',
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all',
                   location.pathname === item.href
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground',
+                    ? 'bg-accent text-accent-foreground hover:text-white'
+                    : 'text-muted-foreground hover:text-primary',
                 )}
               >
                 <item.icon className="h-4 w-4" />

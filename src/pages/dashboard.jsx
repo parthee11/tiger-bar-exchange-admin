@@ -10,7 +10,10 @@ import {
   Table,
   Calendar,
   TrendingDown,
-  Settings
+  Settings,
+  Tv,
+  Sparkles,
+  ScrollText
 } from 'lucide-react';
 
 // Import the NavigationCard component
@@ -26,7 +29,7 @@ export function Dashboard() {
   // Define the navigation cards
   const navigationCards = [
     {
-      title: 'Items',
+      title: 'Manage Items',
       description: 'Add/edit items, floor/base price, demand tracking',
       icon: <Package className="h-8 w-8" />,
       path: '/items',
@@ -81,7 +84,27 @@ export function Dashboard() {
       path: '/market-crash',
       color: 'bg-red-100 text-red-700',
     },
-
+    {
+      title: 'TV Screen',
+      description: 'Display drinks menu on TV screen',
+      icon: <Tv className="h-8 w-8" />,
+      path: '/tv-screen',
+      color: 'bg-cyan-100 text-cyan-700',
+    },
+    {
+      title: 'LED Ticker',
+      description: 'LED-style scrolling price ticker',
+      icon: <ScrollText className="h-8 w-8" />,
+      path: '/ticker-board',
+      color: 'bg-teal-100 text-teal-700',
+    },
+    {
+      title: 'Highlights',
+      description: 'Curate trending, top gainers, and top losers per branch',
+      icon: <Sparkles className="h-8 w-8" />,
+      path: '/highlights',
+      color: 'bg-pink-100 text-pink-700',
+    },
     {
       title: 'Settings',
       description: 'Configure system settings',

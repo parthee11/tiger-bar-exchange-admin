@@ -2,6 +2,8 @@ import React from "react";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select-advanced";
 import { BranchCheckboxList } from "./BranchCheckboxList";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
 
 /**
  * ItemForm component for adding/editing items
@@ -107,7 +109,7 @@ export function ItemForm({
             type="checkbox"
             id="isHardLiquor"
             checked={formData.isHardLiquor}
-            onChange={(e) => handleCheckboxChange(e.target.checked)}
+            onChange={(e) => handleCheckboxChange(e.target.checked, 'isHardLiquor')}
             className="mr-2"
           />
           <label 
@@ -118,6 +120,16 @@ export function ItemForm({
           </label>
         </div>
       )}
+
+      {/* Show in Menu toggle */}
+      <div className="flex items-center justify-between pt-2">
+        <Label htmlFor="showInMenu" className="text-sm font-medium">Show in Menu</Label>
+        <Switch
+          id="showInMenu"
+          checked={formData.showInMenu !== false}
+          onCheckedChange={(checked) => handleCheckboxChange(checked, 'showInMenu')}
+        />
+      </div>
     </div>
   );
 }

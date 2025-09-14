@@ -1,33 +1,66 @@
+/* eslint-disable max-lines-per-function */
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 import { Checkbox } from '../components/ui/checkbox';
-import { Plus, Edit, Trash2, MapPin, Phone, Store, Table, Loader2, Copy, Check } from 'lucide-react';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  MapPin,
+  Phone,
+  Store,
+  Table,
+  Loader2,
+  Copy,
+  Check,
+} from 'lucide-react';
 import { branchesApi } from '../api/api';
 import apiClient from '../api/index';
 import { useConfirmationDialog } from '../components/providers/confirmation-provider';
 import { useToast } from '../components/ui/use-toast';
 
 // Branch Card Component
-function BranchCard({ branch, onEdit, onDelete, onToggleStatus, onViewTables, actionLoading }) {
+function BranchCard({
+  branch,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  onViewTables,
+  actionLoading,
+}) {
   const [copied, setCopied] = useState(false);
-  
+
   const handleCopyId = () => {
     if (!branch.branchId) return;
-    
-    navigator.clipboard.writeText(branch.branchId)
+
+    navigator.clipboard
+      .writeText(branch.branchId)
       .then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Failed to copy branch ID: ', err);
       });
   };
-  
+
   return (
     <Card className="overflow-hidden border-muted/40 hover:border-muted/80 transition-colors">
       <CardHeader className="pb-2">
@@ -44,13 +77,17 @@ function BranchCard({ branch, onEdit, onDelete, onToggleStatus, onViewTables, ac
                         ? 'bg-green-50 text-green-700 hover:bg-green-100'
                         : 'bg-red-50 text-red-700 hover:bg-red-100'
                     }`}
-                    title={branch.isActive ? 'Click to deactivate' : 'Click to activate'}
+                    title={
+                      branch.isActive
+                        ? 'Click to deactivate'
+                        : 'Click to activate'
+                    }
                   >
                     {branch.isActive ? 'Active' : 'Inactive'}
                   </button>
                 </CardTitle>
               </div>
-              
+
               <div className="flex items-center mt-1 gap-2">
                 {branch.branchId && (
                   <div className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-700/10">
@@ -90,7 +127,9 @@ function BranchCard({ branch, onEdit, onDelete, onToggleStatus, onViewTables, ac
         <div className="space-y-2 text-sm">
           <div className="flex items-center">
             <Phone className="h-3 w-3 mr-2 flex-shrink-0" />
-            <span className="text-muted-foreground">{branch.contactNumber}</span>
+            <span className="text-muted-foreground">
+              {branch.contactNumber}
+            </span>
           </div>
         </div>
         <div className="mt-4 flex justify-end space-x-2">
@@ -119,20 +158,36 @@ function BranchCard({ branch, onEdit, onDelete, onToggleStatus, onViewTables, ac
 }
 
 // Branch Form Component
-const BranchForm = ({ formData, error, actionLoading, onInputChange, onCheckboxChange, onSubmit, onCancel, submitButtonText }) => {
-  const idPrefix = submitButtonText.toLowerCase().includes('add') ? '' : 'edit-';
+const BranchForm = ({
+  formData,
+  error,
+  actionLoading,
+  onInputChange,
+  onCheckboxChange,
+  onSubmit,
+  onCancel,
+  submitButtonText,
+}) => {
+  const idPrefix = submitButtonText.toLowerCase().includes('add')
+    ? ''
+    : 'edit-';
 
   return (
     <>
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm" role="alert">
+        <div
+          className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm"
+          role="alert"
+        >
           <span>{error}</span>
         </div>
       )}
 
       <div className="space-y-4 py-2">
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}name`}>Branch Name <span className="text-red-500">*</span></Label>
+          <Label htmlFor={`${idPrefix}name`}>
+            Branch Name <span className="text-red-500">*</span>
+          </Label>
           <Input
             id={`${idPrefix}name`}
             name="name"
@@ -143,7 +198,9 @@ const BranchForm = ({ formData, error, actionLoading, onInputChange, onCheckboxC
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}address`}>Address <span className="text-red-500">*</span></Label>
+          <Label htmlFor={`${idPrefix}address`}>
+            Address <span className="text-red-500">*</span>
+          </Label>
           <Input
             id={`${idPrefix}address`}
             name="address"
@@ -154,7 +211,9 @@ const BranchForm = ({ formData, error, actionLoading, onInputChange, onCheckboxC
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}contactNumber`}>Contact Number <span className="text-red-500">*</span></Label>
+          <Label htmlFor={`${idPrefix}contactNumber`}>
+            Contact Number <span className="text-red-500">*</span>
+          </Label>
           <Input
             id={`${idPrefix}contactNumber`}
             name="contactNumber"
@@ -183,22 +242,17 @@ const BranchForm = ({ formData, error, actionLoading, onInputChange, onCheckboxC
             checked={formData.isActive}
             onCheckedChange={(checked) => onCheckboxChange(checked, 'isActive')}
           />
-          <Label htmlFor={`${idPrefix}isActive`} className="cursor-pointer">Active</Label>
+          <Label htmlFor={`${idPrefix}isActive`} className="cursor-pointer">
+            Active
+          </Label>
         </div>
       </div>
 
       <DialogFooter>
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          disabled={actionLoading}
-        >
+        <Button variant="outline" onClick={onCancel} disabled={actionLoading}>
           Cancel
         </Button>
-        <Button
-          onClick={onSubmit}
-          disabled={actionLoading}
-        >
+        <Button onClick={onSubmit} disabled={actionLoading}>
           {actionLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -214,12 +268,16 @@ const BranchForm = ({ formData, error, actionLoading, onInputChange, onCheckboxC
 };
 
 // Tables Modal Component
-function TablesModal({ isOpen, onOpenChange, currentBranch, selectedTables, loading, onClose }) {
+function TablesModal({
+  isOpen,
+  onOpenChange,
+  currentBranch,
+  selectedTables,
+  loading,
+  onClose,
+}) {
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={onOpenChange}
-    >
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Tables at {currentBranch?.name}</DialogTitle>
@@ -237,9 +295,12 @@ function TablesModal({ isOpen, onOpenChange, currentBranch, selectedTables, load
           ) : selectedTables.length === 0 ? (
             <div className="text-center py-8 bg-muted/20 rounded-lg border border-dashed">
               <Table className="h-12 w-12 mx-auto text-muted mb-4" />
-              <p className="text-muted-foreground">No tables available for this branch.</p>
+              <p className="text-muted-foreground">
+                No tables available for this branch.
+              </p>
               <p className="text-xs text-muted-foreground mt-2">
-                Tables will be displayed here once they are added to this branch.
+                Tables will be displayed here once they are added to this
+                branch.
               </p>
             </div>
           ) : (
@@ -248,20 +309,32 @@ function TablesModal({ isOpen, onOpenChange, currentBranch, selectedTables, load
                 <div
                   key={table.id || table._id}
                   className={`p-3 rounded-lg flex flex-col items-center justify-center aspect-square shadow-sm border ${
-                    table.status === 'available' ? 'bg-green-50 border-green-200' :
-                    table.status === 'occupied' ? 'bg-red-50 border-red-200' :
-                    table.status === 'reserved' ? 'bg-yellow-50 border-yellow-200' :
-                    'bg-gray-50 border-gray-200'
+                    table.status === 'available'
+                      ? 'bg-green-50 border-green-200'
+                      : table.status === 'occupied'
+                      ? 'bg-red-50 border-red-200'
+                      : table.status === 'reserved'
+                      ? 'bg-yellow-50 border-yellow-200'
+                      : 'bg-gray-50 border-gray-200'
                   }`}
                 >
-                  <Table className={`h-6 w-6 mb-2 ${
-                    table.status === 'available' ? 'text-green-600' :
-                    table.status === 'occupied' ? 'text-red-600' :
-                    table.status === 'reserved' ? 'text-yellow-600' :
-                    'text-gray-600'
-                  }`} />
-                  <span className="font-medium text-sm">{table.number || table.tableNumber}</span>
-                  <span className="text-xs capitalize mt-1">{table.status || 'unknown'}</span>
+                  <Table
+                    className={`h-6 w-6 mb-2 ${
+                      table.status === 'available'
+                        ? 'text-green-600'
+                        : table.status === 'occupied'
+                        ? 'text-red-600'
+                        : table.status === 'reserved'
+                        ? 'text-yellow-600'
+                        : 'text-gray-600'
+                    }`}
+                  />
+                  <span className="font-medium text-sm">
+                    {table.number || table.tableNumber}
+                  </span>
+                  <span className="text-xs capitalize mt-1">
+                    {table.status || 'unknown'}
+                  </span>
                 </div>
               ))}
             </div>
@@ -315,31 +388,38 @@ export function Branches() {
     setError(null);
     try {
       const data = await branchesApi.getBranches();
-      
+
       // Process branches to ensure numberOfTables is set correctly
-      const processedBranches = await Promise.all(data.data.map(async (branch) => {
-        // If numberOfTables is already set and greater than 0, use it
-        if (branch.numberOfTables && branch.numberOfTables > 0) {
-          return branch;
-        }
-        
-        try {
-          // Try to fetch tables count from the API
-          const tablesResponse = await apiClient.get(`/branches/${branch._id}/tables`);
-          if (tablesResponse.data && tablesResponse.data.data) {
-            return {
-              ...branch,
-              numberOfTables: tablesResponse.data.data.length
-            };
+      const processedBranches = await Promise.all(
+        data.data.map(async (branch) => {
+          // If numberOfTables is already set and greater than 0, use it
+          if (branch.numberOfTables && branch.numberOfTables > 0) {
+            return branch;
           }
-        } catch (error) {
-          console.error(`Error fetching tables for branch ${branch._id}:`, error);
-          // If there's an error, don't modify the branch
-        }
-        
-        return branch;
-      }));
-      
+
+          try {
+            // Try to fetch tables count from the API
+            const tablesResponse = await apiClient.get(
+              `/branches/${branch._id}/tables`,
+            );
+            if (tablesResponse.data && tablesResponse.data.data) {
+              return {
+                ...branch,
+                numberOfTables: tablesResponse.data.data.length,
+              };
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching tables for branch ${branch._id}:`,
+              error,
+            );
+            // If there's an error, don't modify the branch
+          }
+
+          return branch;
+        }),
+      );
+
       setBranches(processedBranches);
     } catch (err) {
       console.error('Error fetching branches:', err);
@@ -431,7 +511,7 @@ export function Branches() {
     setSelectedTables([]);
     setIsTablesModalOpen(true);
     setTablesLoading(true);
-    
+
     try {
       // Fetch tables for this branch
       const response = await apiClient.get(`/branches/${branch._id}/tables`);
@@ -440,11 +520,14 @@ export function Branches() {
       } else {
         // Create dummy tables based on numberOfTables if API doesn't return any
         if (branch.numberOfTables && branch.numberOfTables > 0) {
-          const dummyTables = Array.from({ length: branch.numberOfTables }, (_, i) => ({
-            _id: `dummy-${i}`,
-            tableNumber: i + 1,
-            status: 'available',
-          }));
+          const dummyTables = Array.from(
+            { length: branch.numberOfTables },
+            (_, i) => ({
+              _id: `dummy-${i}`,
+              tableNumber: i + 1,
+              status: 'available',
+            }),
+          );
           setSelectedTables(dummyTables);
         }
       }
@@ -455,14 +538,17 @@ export function Branches() {
         description: 'Failed to load tables. Please try again.',
         variant: 'destructive',
       });
-      
+
       // Create dummy tables based on numberOfTables if API fails
       if (branch.numberOfTables && branch.numberOfTables > 0) {
-        const dummyTables = Array.from({ length: branch.numberOfTables }, (_, i) => ({
-          _id: `dummy-${i}`,
-          tableNumber: i + 1,
-          status: 'available',
-        }));
+        const dummyTables = Array.from(
+          { length: branch.numberOfTables },
+          (_, i) => ({
+            _id: `dummy-${i}`,
+            tableNumber: i + 1,
+            status: 'available',
+          }),
+        );
         setSelectedTables(dummyTables);
       }
     } finally {
@@ -480,7 +566,7 @@ export function Branches() {
     try {
       // Ensure numberOfTables is a positive integer
       const numTables = parseInt(formData.numberOfTables);
-      
+
       const newBranchData = {
         name: formData.name.trim(),
         address: formData.address.trim(),
@@ -492,26 +578,26 @@ export function Branches() {
       const response = await branchesApi.createBranch(newBranchData);
       setIsAddModalOpen(false);
       resetForm();
-      
+
       // If tables were specified, create them automatically
       if (numTables > 0 && response.data && response.data._id) {
         try {
           // Create tables in parallel
           await Promise.all(
-            Array.from({ length: numTables }, (_, i) => 
+            Array.from({ length: numTables }, (_, i) =>
               apiClient.post(`/branches/${response.data._id}/tables`, {
                 tableNumber: i + 1,
                 status: 'available',
-                capacity: 4 // Default capacity
-              })
-            )
+                capacity: 4, // Default capacity
+              }),
+            ),
           );
         } catch (tableErr) {
           console.error('Error creating tables:', tableErr);
           // Continue even if table creation fails
         }
       }
-      
+
       fetchBranches();
 
       toast({
@@ -542,7 +628,7 @@ export function Branches() {
       // Ensure numberOfTables is a positive integer
       const numTables = parseInt(formData.numberOfTables);
       const oldNumTables = parseInt(currentBranch.numberOfTables) || 0;
-      
+
       const updatedBranchData = {
         name: formData.name.trim(),
         address: formData.address.trim(),
@@ -552,33 +638,40 @@ export function Branches() {
       };
 
       await branchesApi.updateBranch(currentBranch._id, updatedBranchData);
-      
+
       // If the number of tables has increased, create the additional tables
       if (numTables > oldNumTables) {
         try {
           // Get existing tables to determine the next table number
-          const tablesResponse = await apiClient.get(`/branches/${currentBranch._id}/tables`);
+          const tablesResponse = await apiClient.get(
+            `/branches/${currentBranch._id}/tables`,
+          );
           const existingTables = tablesResponse.data?.data || [];
-          const startTableNumber = existingTables.length > 0 
-            ? Math.max(...existingTables.map(t => parseInt(t.tableNumber || t.number) || 0)) + 1 
-            : 1;
-          
+          const startTableNumber =
+            existingTables.length > 0
+              ? Math.max(
+                  ...existingTables.map(
+                    (t) => parseInt(t.tableNumber || t.number) || 0,
+                  ),
+                ) + 1
+              : 1;
+
           // Create new tables starting from the next available number
           await Promise.all(
-            Array.from({ length: numTables - oldNumTables }, (_, i) => 
+            Array.from({ length: numTables - oldNumTables }, (_, i) =>
               apiClient.post(`/branches/${currentBranch._id}/tables`, {
                 tableNumber: startTableNumber + i,
                 status: 'available',
-                capacity: 4 // Default capacity
-              })
-            )
+                capacity: 4, // Default capacity
+              }),
+            ),
           );
         } catch (tableErr) {
           console.error('Error creating additional tables:', tableErr);
           // Continue even if table creation fails
         }
       }
-      
+
       setIsEditModalOpen(false);
       resetForm();
       fetchBranches();
@@ -636,7 +729,9 @@ export function Branches() {
   const toggleBranchStatus = (branch) => {
     openConfirmation({
       title: `${branch.isActive ? 'Deactivate' : 'Activate'} Branch`,
-      message: `Are you sure you want to ${branch.isActive ? 'deactivate' : 'activate'} ${branch.name}?`,
+      message: `Are you sure you want to ${
+        branch.isActive ? 'deactivate' : 'activate'
+      } ${branch.name}?`,
       confirmText: branch.isActive ? 'Deactivate' : 'Activate',
       cancelText: 'Cancel',
       confirmVariant: branch.isActive ? 'destructive' : 'default',
@@ -653,7 +748,9 @@ export function Branches() {
 
           toast({
             title: 'Success',
-            description: `Branch ${branch.isActive ? 'deactivated' : 'activated'} successfully.`,
+            description: `Branch ${
+              branch.isActive ? 'deactivated' : 'activated'
+            } successfully.`,
             variant: 'success',
           });
         } catch (err) {
@@ -692,7 +789,10 @@ export function Branches() {
 
       {/* Error display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md" role="alert">
+        <div
+          className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md"
+          role="alert"
+        >
           <span className="block sm:inline">{error}</span>
         </div>
       )}
@@ -710,14 +810,15 @@ export function Branches() {
           </div>
           <h3 className="text-lg font-medium">No branches found</h3>
           <p className="text-sm text-muted-foreground mt-2 max-w-md">
-            Branches represent your physical business locations. Add your first branch to get started.
+            Branches represent your physical business locations. Add your first
+            branch to get started.
           </p>
           <Button className="mt-6" onClick={openAddModal}>
             <Plus className="h-4 w-4 mr-2" /> Add Your First Branch
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-2">
           {branches.map((branch) => (
             <BranchCard
               key={branch._id || branch.id}
@@ -733,12 +834,15 @@ export function Branches() {
       )}
 
       {/* Add Branch Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={(open) => {
-        if (!open) {
-          setIsAddModalOpen(false);
-          resetForm();
-        }
-      }}>
+      <Dialog
+        open={isAddModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsAddModalOpen(false);
+            resetForm();
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Branch</DialogTitle>
@@ -764,18 +868,19 @@ export function Branches() {
       </Dialog>
 
       {/* Edit Branch Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={(open) => {
-        if (!open) {
-          setIsEditModalOpen(false);
-          resetForm();
-        }
-      }}>
+      <Dialog
+        open={isEditModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsEditModalOpen(false);
+            resetForm();
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Branch</DialogTitle>
-            <DialogDescription>
-              Update branch information
-            </DialogDescription>
+            <DialogDescription>Update branch information</DialogDescription>
           </DialogHeader>
 
           <BranchForm
