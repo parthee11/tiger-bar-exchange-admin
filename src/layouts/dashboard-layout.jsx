@@ -2,7 +2,6 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Sidebar } from '../components/sidebar';
 import { MarketCrashIndicator } from '../components/market-crash-indicator';
-import { MarketCrashEffects } from '../components/market-crash-effects';
 import { Menu, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
@@ -39,9 +38,7 @@ export function DashboardLayout({ children }) {
       
       {/* Main content */}
       <main className="flex-1 p-6 lg:p-8 overflow-y-auto relative">
-        <MarketCrashEffects>
-          {children}
-        </MarketCrashEffects>
+        {children}
         <MarketCrashIndicator />
       </main>
       

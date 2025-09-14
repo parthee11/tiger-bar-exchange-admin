@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "../ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import { ItemTypeTag } from "./ItemTypeTag";
+import { Switch } from "../ui/switch";
 
 /**
  * ItemTable component for displaying items in a table
@@ -35,7 +36,8 @@ export function ItemTable({
   currentPage,
   itemsPerPage,
   onPageChange,
-  onItemsPerPageChange
+  onItemsPerPageChange,
+  onToggleShowInMenu
 }) {
   return (
     <>
@@ -49,6 +51,7 @@ export function ItemTable({
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Category</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Floor Price</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Hard Liquor</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Show in Menu</th>
                 <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
@@ -70,6 +73,15 @@ export function ItemTable({
                   <td className="p-4 align-middle">{formatPrice(item.floorPrice)}</td>
                   <td className="p-4 align-middle">
                     {item.isHardLiquor ? "Yes" : "No"}
+                  </td>
+                  <td className="p-4 align-middle">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id={`showInMenu-${item._id}`}
+                        checked={item.showInMenu !== false}
+                        onCheckedChange={(checked) => onToggleShowInMenu?.(item, checked)}
+                      />
+                    </div>
                   </td>
                   <td className="p-4 align-middle text-right">
                     <div className="flex justify-end space-x-2">

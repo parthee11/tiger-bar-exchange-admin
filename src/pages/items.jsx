@@ -31,7 +31,8 @@ export function Items() {
     category: "",
     branches: [],
     isHardLiquor: false,
-    floorPrice: ""
+    floorPrice: "",
+    showInMenu: true
   });
   const [bulkImportData, setBulkImportData] = useState([]);
   const [bulkImportStep, setBulkImportStep] = useState(1); // 1: Upload, 2: Review, 3: Success
@@ -54,7 +55,8 @@ export function Items() {
     try {
       const data = await api.items.getItems({
         page,
-        limit
+        limit,
+        includeHidden: true
       });
       setItems(data.data || []);
       
@@ -111,7 +113,8 @@ export function Items() {
         category: formData.category,
         branches: formData.branches,
         isHardLiquor: formData.isHardLiquor,
-        floorPrice: parseFloat(formData.floorPrice)
+        floorPrice: parseFloat(formData.floorPrice),
+        showInMenu: formData.showInMenu !== false
       };
       
       await api.items.createItem(newItemData);
@@ -151,7 +154,8 @@ export function Items() {
         category: formData.category,
         branches: formData.branches,
         isHardLiquor: formData.isHardLiquor,
-        floorPrice: parseFloat(formData.floorPrice)
+        floorPrice: parseFloat(formData.floorPrice),
+        showInMenu: formData.showInMenu !== false
       };
       
       await api.items.updateItem(currentItem._id, updatedItemData);
@@ -224,7 +228,8 @@ export function Items() {
       category: item.category._id || item.category,
       branches: item.branches.map(branch => typeof branch === 'object' ? branch._id : branch),
       isHardLiquor: item.isHardLiquor || false,
-      floorPrice: item.floorPrice.toString()
+      floorPrice: item.floorPrice.toString(),
+      showInMenu: item.showInMenu !== false
     });
     setIsEditModalOpen(true);
   };
@@ -236,7 +241,8 @@ export function Items() {
       category: "",
       branches: [],
       isHardLiquor: false,
-      floorPrice: ""
+      floorPrice: "",
+      showInMenu: true
     });
     setCurrentItem(null);
   };
@@ -274,10 +280,10 @@ export function Items() {
     });
   };
 
-  const handleCheckboxChange = (checked) => {
+  const handleCheckboxChange = (checked, field = 'isHardLiquor') => {
     setFormData({
       ...formData,
-      isHardLiquor: checked
+      [field]: checked
     });
   };
   
@@ -715,6 +721,15 @@ export function Items() {
           itemsPerPage={itemsPerPage}
           onPageChange={handlePageChange}
           onItemsPerPageChange={handleItemsPerPageChange}
+          onToggleShowInMenu={async (item, checked) => {
+            try {
+              await api.items.updateItem(item._id, { showInMenu: checked });
+              // Optimistically update local state
+              setItems(prev => prev.map(i => i._id === item._id ? { ...i, showInMenu: checked } : i));
+            } catch (err) {
+              console.error('Failed to update showInMenu:', err);
+            }
+          }}
         />
       )}
 

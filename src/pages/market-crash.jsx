@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
-import { format, parseISO } from "date-fns";
-import branchesApi from "../api/branches";
-import { useToast } from "../components/ui/use-toast";
-import { useMarketCrash } from "../contexts/market-crash-context";
-import { BranchSelector } from "../components/market-crash/branch-selector";
-import { MarketCrashTrigger } from "../components/market-crash/market-crash-trigger";
-import { MarketCrashStatus } from "../components/market-crash/market-crash-status";
-import { CrashHistory } from "../components/market-crash/crash-history";
-import { ConfirmationModal } from "../components/market-crash/confirmation-modal";
+/* eslint-disable max-lines-per-function */
+import { useState, useEffect } from 'react';
+import { format, parseISO } from 'date-fns';
+import branchesApi from '../api/branches';
+import { useToast } from '../components/ui/use-toast';
+import { useMarketCrash } from '../contexts/market-crash-context';
+import { BranchSelector } from '../components/market-crash/branch-selector';
+import { MarketCrashTrigger } from '../components/market-crash/market-crash-trigger';
+import { MarketCrashStatus } from '../components/market-crash/market-crash-status';
+import { CrashHistory } from '../components/market-crash/crash-history';
+import { ConfirmationModal } from '../components/market-crash/confirmation-modal';
 
 /**
  * MarketCrash page component
@@ -18,7 +19,7 @@ export function MarketCrash() {
   const { toast } = useToast();
   const { refreshMarketCrashStatus } = useMarketCrash();
   const [branches, setBranches] = useState([]);
-  const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState('');
   const [selectedBranchData, setSelectedBranchData] = useState(null);
   const [crashPercentage, setCrashPercentage] = useState(50);
   const [crashDuration, setCrashDuration] = useState(15);
@@ -37,11 +38,11 @@ export function MarketCrash() {
         setBranches(response.data);
         setLoadingBranches(false);
       } catch (error) {
-        console.error("Error fetching branches:", error);
+        console.error('Error fetching branches:', error);
         toast({
-          title: "Error",
-          description: "Failed to load branches",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to load branches',
+          variant: 'destructive',
         });
         setLoadingBranches(false);
       }
@@ -62,11 +63,11 @@ export function MarketCrash() {
         const response = await branchesApi.getBranch(selectedBranch);
         setSelectedBranchData(response.data);
       } catch (error) {
-        console.error("Error fetching branch data:", error);
+        console.error('Error fetching branch data:', error);
         toast({
-          title: "Error",
-          description: "Failed to load branch data",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to load branch data',
+          variant: 'destructive',
         });
       }
     };
@@ -86,13 +87,13 @@ export function MarketCrash() {
     const endTime = new Date(
       selectedBranchData.marketCrashEndTime ||
         startTime.getTime() +
-          (selectedBranchData.marketCrashDuration || 15) * 60 * 1000
+          (selectedBranchData.marketCrashDuration || 15) * 60 * 1000,
     );
 
     const timer = setInterval(() => {
       const now = new Date();
       if (now >= endTime) {
-        setTimeRemaining("00:00");
+        setTimeRemaining('00:00');
         clearInterval(timer);
         return;
       }
@@ -101,9 +102,9 @@ export function MarketCrash() {
       const minutes = Math.floor(diff / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       setTimeRemaining(
-        `${minutes.toString().padStart(2, "0")}:${seconds
+        `${minutes.toString().padStart(2, '0')}:${seconds
           .toString()
-          .padStart(2, "0")}`
+          .padStart(2, '0')}`,
       );
     }, 1000);
 
@@ -129,14 +130,14 @@ export function MarketCrash() {
   const showTriggerConfirmation = () => {
     if (!selectedBranch) {
       toast({
-        title: "Error",
-        description: "Please select a branch",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please select a branch',
+        variant: 'destructive',
       });
       return;
     }
 
-    setConfirmAction("trigger");
+    setConfirmAction('trigger');
     setShowConfirmModal(true);
   };
 
@@ -144,22 +145,22 @@ export function MarketCrash() {
   const showEndConfirmation = () => {
     if (!selectedBranch) {
       toast({
-        title: "Error",
-        description: "Please select a branch",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please select a branch',
+        variant: 'destructive',
       });
       return;
     }
 
-    setConfirmAction("end");
+    setConfirmAction('end');
     setShowConfirmModal(true);
   };
 
   // Handle confirmation action
   const handleConfirmAction = async () => {
-    if (confirmAction === "trigger") {
+    if (confirmAction === 'trigger') {
       await triggerMarketCrash();
-    } else if (confirmAction === "end") {
+    } else if (confirmAction === 'end') {
       await endMarketCrash();
     }
   };
@@ -171,13 +172,13 @@ export function MarketCrash() {
       const response = await branchesApi.triggerMarketCrash(
         selectedBranch,
         crashPercentage,
-        crashDuration
+        crashDuration,
       );
 
       toast({
-        title: "Success",
-        description: response.message || "Market crash triggered successfully",
-        variant: "default",
+        title: 'Success',
+        description: response.message || 'Market crash triggered successfully',
+        variant: 'default',
       });
 
       // Refresh branch data
@@ -189,11 +190,11 @@ export function MarketCrash() {
 
       setLoading(false);
     } catch (error) {
-      console.error("Error triggering market crash:", error);
+      console.error('Error triggering market crash:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to trigger market crash",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to trigger market crash',
+        variant: 'destructive',
       });
       setLoading(false);
     }
@@ -208,13 +209,14 @@ export function MarketCrash() {
       // Show enhanced success message with price reset information
       const resetCount = response.data?.resetCount || 0;
       const branchName = selectedBranchData?.name || 'selected branch';
-      
+
       toast({
-        title: "Market Crash Ended",
-        description: resetCount > 0 
-          ? `Market crash ended for ${branchName}. ${resetCount} item prices have been reset to floor price.`
-          : response.message || "Market crash ended successfully",
-        variant: "default",
+        title: 'Market Crash Ended',
+        description:
+          resetCount > 0
+            ? `Market crash ended for ${branchName}. ${resetCount} item prices have been reset to floor price.`
+            : response.message || 'Market crash ended successfully',
+        variant: 'default',
       });
 
       // Refresh branch data
@@ -226,11 +228,11 @@ export function MarketCrash() {
 
       setLoading(false);
     } catch (error) {
-      console.error("Error ending market crash:", error);
+      console.error('Error ending market crash:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to end market crash",
-        variant: "destructive",
+        title: 'Error',
+        description: error.message || 'Failed to end market crash',
+        variant: 'destructive',
       });
       setLoading(false);
     }
@@ -238,18 +240,18 @@ export function MarketCrash() {
 
   // Format crash start time
   const formatCrashTime = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return 'N/A';
     try {
       const date = parseISO(dateString);
-      return format(date, "MMM d, yyyy HH:mm:ss");
+      return format(date, 'MMM d, yyyy HH:mm:ss');
     } catch (error) {
-      return "Invalid date";
+      return 'Invalid date';
     }
   };
 
   // Calculate crash duration
   const calculateCrashDuration = (startTime, endTime) => {
-    if (!startTime) return "N/A";
+    if (!startTime) return 'N/A';
 
     const start = new Date(startTime);
     const end = endTime ? new Date(endTime) : new Date();
@@ -265,7 +267,8 @@ export function MarketCrash() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Market Crash</h1>
         <p className="text-muted-foreground">
-          Trigger branch-specific market crash to drop prices based on percentage of base price
+          Trigger branch-specific market crash to drop prices based on
+          percentage of base price
         </p>
       </div>
 
@@ -315,19 +318,19 @@ export function MarketCrash() {
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmAction}
         title={
-          confirmAction === "trigger"
-            ? "Confirm Market Crash"
-            : "End Market Crash"
+          confirmAction === 'trigger'
+            ? 'Confirm Market Crash'
+            : 'End Market Crash'
         }
         message={
-          confirmAction === "trigger"
+          confirmAction === 'trigger'
             ? `Are you sure you want to trigger a market crash with ${crashPercentage}% intensity for ${crashDuration} minutes?`
-            : "Are you sure you want to end the current market crash?"
+            : 'Are you sure you want to end the current market crash?'
         }
         confirmText={
-          confirmAction === "trigger" ? "Trigger Crash" : "End Crash"
+          confirmAction === 'trigger' ? 'Trigger Crash' : 'End Crash'
         }
-        confirmVariant={confirmAction === "trigger" ? "destructive" : "default"}
+        confirmVariant={confirmAction === 'trigger' ? 'destructive' : 'default'}
       />
     </div>
   );

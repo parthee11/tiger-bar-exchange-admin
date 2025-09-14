@@ -1,12 +1,18 @@
-import React from "react";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
-import { Select, SelectOption } from "../../components/ui/select";
-import { AlertTriangle } from "lucide-react";
+import React from 'react';
+import { Button } from '../../components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../../components/ui/card';
+import { Select, SelectOption } from '../../components/ui/select';
+import { AlertTriangle } from 'lucide-react';
 
 /**
  * MarketCrashTrigger component for triggering a market crash
- * 
+ *
  * @param {Object} props - Component props
  * @param {string} props.selectedBranch - Currently selected branch ID
  * @param {number} props.crashPercentage - Selected crash percentage
@@ -26,29 +32,29 @@ export function MarketCrashTrigger({
   onCrashDurationChange,
   onTriggerCrash,
   loading,
-  isCrashActive
+  isCrashActive,
 }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Trigger Market Crash</CardTitle>
         <CardDescription>
-          Initiate a market crash to drop prices based on percentage of base price (floor price)
+          Initiate a market crash to drop prices based on percentage of base
+          price (floor price)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-md border p-4 bg-amber-50">
-          <div className="flex items-start gap-4">
-            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
-            <div>
-              <h4 className="text-sm font-medium text-amber-800">Warning</h4>
-              <p className="text-sm text-amber-700 mt-1">
-                Triggering a market crash will reduce prices based on the percentage of base price (floor price). 
-                Market crash has highest precedence and can override minimum price limits.
-                This action cannot be undone.
-              </p>
-            </div>
-          </div>
+          <h4 className="text-sm flex gap-2 items-center font-medium text-amber-800">
+            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />{' '}
+            Warning
+          </h4>
+          <p className="text-sm text-amber-700 mt-1">
+            Triggering a market crash will reduce prices based on the
+            percentage of base price (floor price). Market crash has highest
+            precedence and can override minimum price limits. This action
+            cannot be undone.
+          </p>
         </div>
 
         <div className="grid gap-2">
