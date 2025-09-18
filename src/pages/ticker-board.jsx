@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import socketService from '../services/socketService';
 import branchesApi from '../api/branches';
@@ -146,7 +147,7 @@ export function TickerBoard() {
           color,
         };
       }),
-    [items]
+    [items],
   );
 
   // Duplicate content to make seamless scroll
@@ -264,7 +265,7 @@ export function TickerBoard() {
             style={{
               // Soft side fade for LED look; keep full content visible
               WebkitMaskImage: 'linear-gradient(to right, transparent, black 2%, black 98%, transparent)',
-              maskImage: 'linear-gradient(to right, transparent, black 2%, black 98%, transparent)'
+              maskImage: 'linear-gradient(to right, transparent, black 2%, black 98%, transparent)',
             }}
           >
             <div
@@ -288,8 +289,8 @@ export function TickerBoard() {
       {/* Local styles for LED look and scroll */}
       <style>{`
         @keyframes led-scroll {
-          0% { transform: translateX(0) scale(0.15); }
-          100% { transform: translateX(-50%) scale(0.15); }
+          0% { transform: translateX(0) scale(0.85); }
+          100% { transform: translateX(-50%) scale(0.85); }
         }
         .animate-led-scroll {
           /* Duration will be overridden inline based on speedMultiplier */
