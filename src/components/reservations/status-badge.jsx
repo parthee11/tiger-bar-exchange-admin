@@ -15,6 +15,7 @@ export function StatusBadge({ status }) {
     
     switch (status.toLowerCase()) {
       case 'confirmed':
+      case 'paid':
         return 'bg-green-100 text-green-800';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
@@ -31,6 +32,7 @@ export function StatusBadge({ status }) {
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
       case 'confirmed':
+      case 'paid':
         return <Check className="h-4 w-4 mr-1" />;
       case 'pending':
         return <Clock className="h-4 w-4 mr-1" />;

@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from "react";
 import { Filter } from "lucide-react";
 import { Button } from "../ui/button";
@@ -14,7 +15,7 @@ import { Button } from "../ui/button";
 export function FilterBar({ filter, onFilterChange, onRefresh }) {
   return (
     <div className="flex items-center gap-2">
-      <select 
+      {/* <select 
         className="rounded-md border border-input bg-background px-3 py-1 text-sm"
         value={filter}
         onChange={(e) => onFilterChange(e.target.value)}
@@ -24,7 +25,7 @@ export function FilterBar({ filter, onFilterChange, onRefresh }) {
         <option value="confirmed">Confirmed</option>
         <option value="cancelled">Cancelled</option>
         <option value="completed">Completed</option>
-      </select>
+      </select> */}
       <Button 
         variant="outline" 
         size="sm" 
