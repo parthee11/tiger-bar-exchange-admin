@@ -285,6 +285,32 @@ const settingsApi = {
     });
     return response.data;
   },
+
+  /**
+   * Get online payment enabled status
+   * @returns {Promise} - Promise with online payment enabled status
+   */
+  getOnlinePaymentEnabled: async () => {
+    try {
+      const response = await apiClient.get('/admin/settings/onlinePaymentEnabled');
+      return response.data;
+    } catch (error) {
+      // Return a default value if the setting doesn't exist
+      return { data: true };
+    }
+  },
+
+  /**
+   * Update online payment enabled status
+   * @param {boolean} enabled - Whether online payment is enabled
+   * @returns {Promise} - Promise with updated online payment enabled status
+   */
+  updateOnlinePaymentEnabled: async (enabled) => {
+    const response = await apiClient.put('/admin/settings/onlinePaymentEnabled', {
+      value: enabled,
+    });
+    return response.data;
+  },
 };
 
 export default settingsApi;
