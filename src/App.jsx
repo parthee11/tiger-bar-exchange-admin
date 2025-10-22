@@ -19,6 +19,7 @@ import { ProtectedRoute } from './components/protected-route';
 import { PublicRoute } from './components/public-route';
 import { TVScreenRoute } from './components/tv-screen-route';
 import { AuthProvider } from './contexts/auth-context';
+import { PrivacyPolicy } from './pages/privacy-policy';
 import { MarketCrashProvider } from './contexts/market-crash-context';
 import { ConfirmationProvider } from './components/providers/confirmation-provider';
 import { MarketCrashEffects } from './components/market-crash-effects';
@@ -111,6 +112,12 @@ const routes = [
     component: Highlights,
     protected: true,
     title: 'Highlights',
+  },
+  {
+    path: '/privacy-policy',
+    component: PrivacyPolicy,
+    protected: true,
+    title: 'Privacy Policy',
   },
   // TV Screen route is handled separately and is now protected
 ];

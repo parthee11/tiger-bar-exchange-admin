@@ -16,6 +16,7 @@ import {
   Tv,
   Sparkles,
   ScrollText,
+  ShieldCheck,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { Button } from './ui/button';
@@ -103,6 +104,12 @@ const navItems = [
     href: '/settings',
     icon: Settings,
     description: 'System settings and configuration',
+  },
+  {
+    title: 'Privacy Policy',
+    href: '/privacy-policy',
+    icon: ShieldCheck,
+    description: 'Understand how data is handled and protected',
   },
 ];
 
