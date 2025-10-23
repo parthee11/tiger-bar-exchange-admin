@@ -1,4 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { DashboardLayout } from "../layouts/dashboard-layout";
+import { useAuth } from "../contexts/auth-context";
 
 const sections = [
   {
@@ -69,7 +71,9 @@ const sections = [
 ];
 
 export function PrivacyPolicy() {
-  return (
+  const { user } = useAuth();
+
+  const content = (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Privacy Policy</h1>
@@ -100,6 +104,18 @@ export function PrivacyPolicy() {
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+
+  if (user) {
+    return <DashboardLayout>{content}</DashboardLayout>;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        {content}
+      </div>
     </div>
   );
 }

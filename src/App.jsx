@@ -116,7 +116,7 @@ const routes = [
   {
     path: '/privacy-policy',
     component: PrivacyPolicy,
-    protected: true,
+    protected: false,
     title: 'Privacy Policy',
   },
   // TV Screen route is handled separately and is now protected
