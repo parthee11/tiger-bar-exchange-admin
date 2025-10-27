@@ -67,7 +67,14 @@ const sections = [
     items: [
       "This Privacy Policy may be updated to reflect operational, legal, or regulatory changes.",
     ]
-  }
+  },
+  {
+    title: "Device Identifiers",
+    items: [
+      "We collect and/or generate device-related identifiers (e.g., an installation/update identifier used by our app framework) to provide core app functionality such as over-the-air updates, security, and reliability. Where applicable, service providers (e.g., our app framework/update service) process this data on our behalf. Data is transmitted securely.",
+    ]
+  },
+  
 ];
 
 export function PrivacyPolicy() {
