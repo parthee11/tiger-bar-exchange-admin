@@ -17,6 +17,7 @@ import {
   Sparkles,
   ScrollText,
   ShieldCheck,
+  Download,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { Button } from './ui/button';
@@ -110,6 +111,12 @@ const navItems = [
     href: '/privacy-policy',
     icon: ShieldCheck,
     description: 'Understand how data is handled and protected',
+  },
+  {
+    title: 'Download App',
+    href: '/download-app',
+    icon: Download,
+    description: 'Download the mobile app APK',
   },
 ];
 

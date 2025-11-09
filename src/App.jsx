@@ -20,6 +20,7 @@ import { PublicRoute } from './components/public-route';
 import { TVScreenRoute } from './components/tv-screen-route';
 import { AuthProvider } from './contexts/auth-context';
 import { PrivacyPolicy } from './pages/privacy-policy';
+import { DownloadApp } from './pages/download-app';
 import { MarketCrashProvider } from './contexts/market-crash-context';
 import { ConfirmationProvider } from './components/providers/confirmation-provider';
 import { MarketCrashEffects } from './components/market-crash-effects';
@@ -118,6 +119,12 @@ const routes = [
     component: PrivacyPolicy,
     protected: false,
     title: 'Privacy Policy',
+  },
+  {
+    path: '/download-app',
+    component: DownloadApp,
+    protected: false,
+    title: 'Download App',
   },
   // TV Screen route is handled separately and is now protected
 ];
