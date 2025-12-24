@@ -65,7 +65,7 @@ export function LoyaltyUsersTable({ users: initialUsers, loading, error, loyalty
       });
       
       // Get the updated loyalty points from the response
-      const updatedPoints = response.data?.loyaltyPoints || (selectedUser.points + points);
+      const updatedPoints = response.data?.data?.loyaltyPoints || (selectedUser.points + points);
       
       // Update local state
       const updatedUsers = users.map(user => {

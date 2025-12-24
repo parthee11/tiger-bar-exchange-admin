@@ -64,6 +64,23 @@ const usersApi = {
     } catch (error) {
       throw error.response?.data || error.message;
     }
+  },
+
+  /**
+   * Update user signup reward/coupon status
+   * @param {string} id - User ID
+   * @param {Object} rewardData - Reward data (claimed, used, etc.)
+   * @returns {Promise} - Promise with updated user data
+   */
+  updateSignupReward: async (id, rewardData) => {
+    try {
+      const response = await apiClient.put(`/admin/users/${id}`, {
+        signupReward: rewardData
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
   }
 };
 

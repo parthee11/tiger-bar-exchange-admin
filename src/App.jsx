@@ -14,6 +14,7 @@ import { Settings } from './pages/settings';
 import { Highlights } from './pages/highlights';
 import { SignIn } from './pages/sign-in';
 import TableManagement from './pages/tables';
+import { Users } from './pages/users';
 import { TVScreen } from './pages/tv-screen';
 import { ProtectedRoute } from './components/protected-route';
 import { PublicRoute } from './components/public-route';
@@ -83,6 +84,12 @@ const routes = [
     component: Branches,
     protected: true,
     title: 'Branches',
+  },
+  {
+    path: '/users',
+    component: Users,
+    protected: true,
+    title: 'User Management',
   },
   {
     path: '/tables',

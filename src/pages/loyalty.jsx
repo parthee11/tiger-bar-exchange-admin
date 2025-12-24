@@ -84,7 +84,7 @@ export function Loyalty() {
       }
     };
     fetchUsers();
-  }, [toast]);
+  }, []);
 
   // Handle users update from child component
   const handleUsersUpdate = (updatedUsers) => {

@@ -13,7 +13,9 @@ import {
   Settings,
   Tv,
   Sparkles,
-  ScrollText
+  ScrollText,
+  Users as UsersIcon,
+  Award
 } from 'lucide-react';
 
 // Import the NavigationCard component
@@ -43,6 +45,13 @@ export function Dashboard() {
       color: 'bg-yellow-100 text-yellow-700',
     },
     {
+      title: 'Users',
+      description: 'Manage user logins, loyalty points, and coupons',
+      icon: <UsersIcon className="h-8 w-8" />,
+      path: '/users',
+      color: 'bg-rose-100 text-rose-700',
+    },
+    {
       title: 'Tables',
       description: 'Manage tables, status (available, reserved, occupied)',
       icon: <Table className="h-8 w-8" />,
@@ -69,6 +78,13 @@ export function Dashboard() {
       icon: <ShoppingBag className="h-8 w-8" />,
       path: '/orders',
       color: 'bg-green-100 text-green-700',
+    },
+    {
+      title: 'Loyalty Programs',
+      description: 'Manage loyalty points and user rewards',
+      icon: <Award className="h-8 w-8" />,
+      path: '/loyalty',
+      color: 'bg-amber-100 text-amber-700',
     },
     {
       title: 'Reservations',

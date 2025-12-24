@@ -40,6 +40,12 @@ const navItems = [
     description: 'Manage business branches (name, address, contact)',
   },
   {
+    title: 'Users',
+    href: '/users',
+    icon: Users,
+    description: 'Manage user logins, loyalty points, and coupons',
+  },
+  {
     title: 'Tables',
     href: '/tables',
     icon: Table,
