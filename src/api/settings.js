@@ -311,6 +311,56 @@ const settingsApi = {
     });
     return response.data;
   },
+
+  /**
+   * Get spin wheel enabled status
+   * @returns {Promise} - Promise with spin wheel enabled status
+   */
+  getSpinWheelEnabled: async () => {
+    try {
+      const response = await apiClient.get('/admin/settings/spinWheelEnabled');
+      return response.data;
+    } catch (error) {
+      return { data: true };
+    }
+  },
+
+  /**
+   * Update spin wheel enabled status
+   * @param {boolean} enabled - Whether the spin wheel is enabled
+   * @returns {Promise} - Promise with updated status
+   */
+  updateSpinWheelEnabled: async (enabled) => {
+    const response = await apiClient.put('/admin/settings/spinWheelEnabled', {
+      value: enabled,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get spin wheel interval (in hours)
+   * @returns {Promise} - Promise with spin wheel interval value
+   */
+  getSpinWheelInterval: async () => {
+    try {
+      const response = await apiClient.get('/admin/settings/spinWheelInterval');
+      return response.data;
+    } catch (error) {
+      return { data: 12 };
+    }
+  },
+
+  /**
+   * Update spin wheel interval (in hours)
+   * @param {number} interval - Number of hours between allowed spins
+   * @returns {Promise} - Promise with updated interval
+   */
+  updateSpinWheelInterval: async (interval) => {
+    const response = await apiClient.put('/admin/settings/spinWheelInterval', {
+      value: interval,
+    });
+    return response.data;
+  },
 };
 
 export default settingsApi;

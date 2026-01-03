@@ -9,7 +9,8 @@ import { AlertCircle, Save, Check } from "lucide-react";
 import { useToast } from "../ui/use-toast";
 import settingsApi from "../../api/settings";
 import loyaltyApi from "../../api/loyalty";
-import { ErrorMessage, LoadingSpinner } from "./loyalty-components";
+import { Select, SelectOption } from '../ui/select';
+import { ErrorMessage, LoadingSpinner } from './loyalty-components';
 
 /**
  * LoyaltySettings component for managing loyalty program settings
@@ -23,32 +24,57 @@ export function LoyaltySettings({ loyaltyEnabled, setLoyaltyEnabled }) {
   const [toggleLoading, setToggleLoading] = useState(false);
   const [percentageLoading, setPercentageLoading] = useState(false);
   const [loyaltyPercentage, setLoyaltyPercentage] = useState(1);
+  const [spinWheelEnabled, setSpinWheelEnabled] = useState(true);
+  const [spinWheelInterval, setSpinWheelInterval] = useState(720);
+  const [intervalUnit, setIntervalUnit] = useState('mins');
+  const [spinWheelLoading, setSpinWheelLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingInterval, setIsEditingInterval] = useState(false);
   const [error, setError] = useState(null);
   const { toast } = useToast();
 
-  // Load loyalty percentage on component mount
+  // Load loyalty settings on component mount
   useEffect(() => {
-    const fetchLoyaltyPercentage = async () => {
+    const fetchSettings = async () => {
       try {
         setPercentageLoading(true);
-        const response = await settingsApi.getLoyaltyPercentage();
-        const percentage = response.data !== undefined ? response.data : 1;
+        setSpinWheelLoading(true);
+        
+        const [percResp, spinEnabledResp, spinIntervalResp] = await Promise.all([
+          settingsApi.getLoyaltyPercentage(),
+          settingsApi.getSpinWheelEnabled(),
+          settingsApi.getSpinWheelInterval()
+        ]);
+        
+        const percentage = percResp.data !== undefined ? percResp.data : 1;
         setLoyaltyPercentage(percentage);
+        
+        const enabled = spinEnabledResp.data !== undefined ? spinEnabledResp.data : true;
+        setSpinWheelEnabled(enabled);
+        
+        const interval = spinIntervalResp.data !== undefined ? spinIntervalResp.data : 720;
+        if (interval > 0 && interval % 60 === 0) {
+          setSpinWheelInterval(interval / 60);
+          setIntervalUnit('hours');
+        } else {
+          setSpinWheelInterval(interval);
+          setIntervalUnit('mins');
+        }
+        
         setError(null);
       } catch (error) {
-        setError("Failed to load loyalty percentage. Using default value of 1%.");
-        setLoyaltyPercentage(1);
+        setError("Failed to load some loyalty settings. Using default values.");
         toast({
           variant: "destructive",
           title: "Error loading settings",
-          description: "Failed to load loyalty percentage. Using default value of 1%."
+          description: "Failed to load loyalty settings. Using default values."
         });
       } finally {
         setPercentageLoading(false);
+        setSpinWheelLoading(false);
       }
     };
-    fetchLoyaltyPercentage();
+    fetchSettings();
   }, [toast]);
 
   // Toggle loyalty program
@@ -135,6 +161,95 @@ export function LoyaltySettings({ loyaltyEnabled, setLoyaltyEnabled }) {
     } finally {
       setPercentageLoading(false);
     }
+  };
+
+  // Toggle spin wheel
+  const handleSpinWheelToggle = async (enabled) => {
+    setSpinWheelLoading(true);
+    try {
+      await settingsApi.updateSpinWheelEnabled(enabled);
+      setSpinWheelEnabled(enabled);
+      setError(null);
+      toast({
+        variant: "success",
+        title: "Spin Wheel Updated",
+        description: enabled 
+          ? "Spin wheel has been enabled successfully." 
+          : "Spin wheel has been disabled successfully."
+      });
+    } catch (error) {
+      setError("Failed to update spin wheel status. Please try again.");
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: "Failed to update spin wheel status. Please try again."
+      });
+    } finally {
+      setSpinWheelLoading(false);
+    }
+  };
+
+  // Update spin wheel interval
+  const handleIntervalUpdate = async () => {
+    setSpinWheelLoading(true);
+    try {
+      const numericInterval = Number(spinWheelInterval);
+      if (isNaN(numericInterval) || numericInterval < 0) {
+        const unitLabel = intervalUnit === 'hours' ? 'hours' : 'minutes';
+        setError(`Please enter a valid interval (${unitLabel}).`);
+        toast({
+          variant: "destructive",
+          title: "Invalid Input",
+          description: `Please enter a valid interval (${unitLabel}).`
+        });
+        setSpinWheelLoading(false);
+        return;
+      }
+      
+      const intervalInMinutes = intervalUnit === 'hours' ? numericInterval * 60 : numericInterval;
+      
+      const response = await settingsApi.updateSpinWheelInterval(intervalInMinutes);
+      const updatedInterval = response.data !== undefined ? response.data.value : intervalInMinutes;
+      
+      if (intervalUnit === 'hours') {
+        setSpinWheelInterval(updatedInterval / 60);
+      } else {
+        setSpinWheelInterval(updatedInterval);
+      }
+      
+      setIsEditingInterval(false);
+      setError(null);
+      toast({
+        variant: "success",
+        title: "Settings Updated",
+        description: `Spin wheel interval updated to ${numericInterval} ${intervalUnit}.`,
+        icon: <Check className="h-4 w-4" />
+      });
+    } catch (error) {
+      setError("Failed to update spin wheel interval. Please try again.");
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: "Failed to update spin wheel interval. Please try again."
+      });
+    } finally {
+      setSpinWheelLoading(false);
+    }
+  };
+
+  // Handle unit change for spin wheel interval
+  const handleUnitChange = (newUnit) => {
+    if (newUnit === intervalUnit) return;
+    
+    const numericValue = Number(spinWheelInterval);
+    if (!isNaN(numericValue)) {
+      if (newUnit === 'hours') {
+        setSpinWheelInterval(numericValue / 60);
+      } else {
+        setSpinWheelInterval(numericValue * 60);
+      }
+    }
+    setIntervalUnit(newUnit);
   };
 
   // Component for loyalty program toggle
@@ -262,6 +377,129 @@ export function LoyaltySettings({ loyaltyEnabled, setLoyaltyEnabled }) {
     </div>
   );
 
+  // Component for spin wheel toggle
+  const SpinWheelToggle = () => (
+    <div className="flex items-center justify-between">
+      <div className="space-y-0.5">
+        <Label htmlFor="spin-wheel-toggle" className="text-base">
+          Spin Wheel (Prize Spinner)
+        </Label>
+        <p className="text-sm text-muted-foreground">
+          Enable or disable the spin wheel for customers to win prizes
+        </p>
+      </div>
+      <div className="flex items-center space-x-2">
+        {spinWheelLoading && !isEditingInterval ? (
+          <LoadingSpinner size="sm" />
+        ) : (
+          <>
+            <Switch
+              id="spin-wheel-toggle"
+              checked={spinWheelEnabled}
+              onCheckedChange={handleSpinWheelToggle}
+              disabled={spinWheelLoading}
+            />
+            <Badge 
+              variant="outline" 
+              className={spinWheelEnabled 
+                ? "bg-green-100 text-green-800 border-green-300"
+                : "bg-yellow-100 text-yellow-800 border-yellow-300"
+              }
+            >
+              {spinWheelEnabled ? (
+                <>
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                  Enabled
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                  Disabled
+                </>
+              )}
+            </Badge>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  // Component for spin wheel interval setting
+  const SpinWheelIntervalSetting = () => (
+    <div className="flex items-center justify-between">
+      <div className="space-y-0.5">
+        <Label htmlFor="spin-wheel-interval" className="text-base">
+          Spin Wheel Interval
+        </Label>
+        <p className="text-sm text-muted-foreground">
+          How often customers can spin the wheel
+        </p>
+      </div>
+      <div className="flex items-center space-x-2">
+        {spinWheelLoading && isEditingInterval ? (
+          <LoadingSpinner size="sm" />
+        ) : isEditingInterval ? (
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
+              <Input
+                id="spin-wheel-interval"
+                type="number"
+                min="0"
+                step={intervalUnit === 'hours' ? '0.1' : '1'}
+                value={spinWheelInterval}
+                onChange={(e) => setSpinWheelInterval(e.target.value)}
+                className="w-24"
+              />
+              <Select 
+                value={intervalUnit} 
+                onChange={(e) => handleUnitChange(e.target.value)}
+                className="w-24"
+              >
+                <SelectOption value='mins'>Mins</SelectOption>
+                <SelectOption value='hours'>Hours</SelectOption>
+              </Select>
+            </div>
+            <Button
+              size="sm"
+              onClick={handleIntervalUpdate}
+              disabled={spinWheelLoading}
+            >
+              <Save className="h-4 w-4 mr-1" />
+              Save
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                // Reset unit and value if canceled? 
+                // Better to just fetch again or keep original.
+                // For now just toggle editing off.
+                setIsEditingInterval(false);
+              }}
+              disabled={spinWheelLoading}
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary" className="text-base px-3 py-1">
+              {Number(spinWheelInterval).toLocaleString(undefined, { maximumFractionDigits: 2 })} {intervalUnit === 'hours' ? 'hours' : 'minutes'}
+            </Badge>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsEditingInterval(true)}
+              disabled={!spinWheelEnabled}
+            >
+              Edit
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -276,6 +514,14 @@ export function LoyaltySettings({ loyaltyEnabled, setLoyaltyEnabled }) {
         <div className="space-y-6">
           <LoyaltyToggle />
           <LoyaltyPercentageSetting />
+          
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-medium mb-4">Spin Wheel Settings</h3>
+            <div className="space-y-6">
+              <SpinWheelToggle />
+              <SpinWheelIntervalSetting />
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -60,6 +60,9 @@ const UserTable = ({
                 <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
                   Verified
                 </th>
+                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
+                  Coupons
+                </th>
                 <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
                   Actions
                 </th>
@@ -102,6 +105,16 @@ const UserTable = ({
                     >
                       {user.phoneVerified ? 'Yes' : 'No'}
                     </span>
+                  </td>
+                  <td className="p-4 align-middle text-center">
+                    <div className="flex flex-col items-center">
+                      <span className="font-semibold text-xs">
+                        {((user.coupons?.length || 0) + (user.signupReward?.claimed ? 1 : 0))} Total
+                      </span>
+                      <span className="text-[10px] text-green-600 font-medium">
+                        {((user.coupons?.filter(c => !c.used).length || 0) + (user.signupReward?.claimed && !user.signupReward?.used ? 1 : 0))} Unused
+                      </span>
+                    </div>
                   </td>
                   <td className="p-4 align-middle text-right">
                     <div className="flex justify-end space-x-2">

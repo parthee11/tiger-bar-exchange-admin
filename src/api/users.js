@@ -81,6 +81,23 @@ const usersApi = {
     } catch (error) {
       throw error.response?.data || error.message;
     }
+  },
+
+  /**
+   * Update user coupons
+   * @param {string} id - User ID
+   * @param {Array} coupons - Array of coupons
+   * @returns {Promise} - Promise with updated user data
+   */
+  updateCoupons: async (id, coupons) => {
+    try {
+      const response = await apiClient.put(`/admin/users/${id}`, {
+        coupons
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
   }
 };
 

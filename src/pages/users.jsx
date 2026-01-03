@@ -113,7 +113,7 @@ export function Users() {
     setSelectedUser(null);
   };
 
-  const handleUpdateCouponStatus = async (rewardData) => {
+  const handleUpdateCouponStatus = async (couponData) => {
     if (!selectedUser) {
       setError('No user selected');
       return;
@@ -121,13 +121,12 @@ export function Users() {
 
     setIsUpdatingCoupon(true);
     try {
-      const currentReward = selectedUser.signupReward || {};
-      const updatedReward = {
-        ...currentReward,
-        used: rewardData.used
-      };
+      const response = await usersApi.updateCoupons(selectedUser._id, couponData.coupons);
 
-      const response = await usersApi.updateSignupReward(selectedUser._id, updatedReward);
+      // Also update signupReward if it was changed
+      if (couponData.signupReward) {
+        await usersApi.updateSignupReward(selectedUser._id, couponData.signupReward);
+      }
 
       if (response.success) {
         fetchUsers();
@@ -136,10 +135,10 @@ export function Users() {
         toast({
           variant: 'success',
           title: 'Success',
-          description: 'Coupon status updated successfully',
+          description: 'Coupons updated successfully',
         });
       } else {
-        const errorMsg = response.message || 'Failed to update coupon status';
+        const errorMsg = response.message || 'Failed to update coupons';
         setError(errorMsg);
         toast({
           variant: 'destructive',
@@ -148,8 +147,8 @@ export function Users() {
         });
       }
     } catch (error) {
-      console.error('Error updating coupon status:', error);
-      const errorMsg = error.message || 'Failed to update coupon status';
+      console.error('Error updating coupons:', error);
+      const errorMsg = error.message || 'Failed to update coupons';
       setError(errorMsg);
       toast({
         variant: 'destructive',
