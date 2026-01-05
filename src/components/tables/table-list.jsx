@@ -12,6 +12,7 @@ const TableList = ({
   handleOpenEditDialog,
   handleOpenDeleteDialog,
   handleOpenAddDialog,
+  handleClearTable,
   indexOfFirstItem,
   indexOfLastItem,
   totalPages,
@@ -80,6 +81,16 @@ const TableList = ({
                   </td>
                   <td className="p-4 align-middle text-right">
                     <div className="flex justify-end space-x-2">
+                      {table.status !== 'available' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          onClick={() => handleClearTable(table)}
+                        >
+                          <RefreshCw className="h-3 w-3" /> Clear
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"

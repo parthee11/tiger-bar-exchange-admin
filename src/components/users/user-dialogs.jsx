@@ -78,20 +78,22 @@ export function LoyaltyPointsDialog({
   );
 }
 
-export function CouponDialog({ 
-  open, 
-  onOpenChange, 
-  user, 
+export function CouponDialog({
+  open,
+  onOpenChange,
+  user,
   onStatusChange = null,
-  isUpdating = false 
+  isUpdating = false,
 }) {
   const [signupReward, setSignupReward] = React.useState(null);
   const [coupons, setCoupons] = React.useState([]);
+  const [searchQuery, setSearchQuery] = React.useState('');
 
   React.useEffect(() => {
     if (user) {
       setSignupReward(user.signupReward || null);
       setCoupons(user.coupons || []);
+      setSearchQuery('');
     }
   }, [user, open]);
 
@@ -106,12 +108,26 @@ export function CouponDialog({
     '1_free_dart_entry': '1 Free Dart Entry',
   };
 
+  const filteredCoupons = coupons
+    .map((coupon, index) => ({ ...coupon, originalIndex: index }))
+    .filter((coupon) =>
+      !searchQuery ||
+      coupon.discountCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (offerTypeLabel[coupon.offerType] || coupon.offerType).toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+
+  const showSignupReward = signupReward && signupReward.claimed && (
+    !searchQuery ||
+    signupReward.discountCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (offerTypeLabel[signupReward.offerType] || signupReward.offerType).toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const handleToggleSignupReward = () => {
     if (!signupReward) return;
     setSignupReward({
       ...signupReward,
       used: !signupReward.used,
-      usedAt: !signupReward.used ? new Date().toISOString() : null
+      usedAt: !signupReward.used ? new Date().toISOString() : null,
     });
   };
 
@@ -120,7 +136,7 @@ export function CouponDialog({
     newCoupons[index] = {
       ...newCoupons[index],
       used: !newCoupons[index].used,
-      usedAt: !newCoupons[index].used ? new Date().toISOString() : null
+      usedAt: !newCoupons[index].used ? new Date().toISOString() : null,
     };
     setCoupons(newCoupons);
   };
@@ -129,7 +145,7 @@ export function CouponDialog({
     if (onStatusChange) {
       onStatusChange({
         signupReward,
-        coupons
+        coupons,
       });
     }
   };
@@ -143,91 +159,112 @@ export function CouponDialog({
             Manage signup rewards and collected coupons for {user.name}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="flex-1 overflow-y-auto py-4 space-y-6">
-          {/* Signup Reward Section */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold border-b pb-2">Signup Reward</h3>
-            {signupReward && signupReward.claimed ? (
-              <div className="grid gap-3 p-3 border rounded-lg bg-slate-50">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-xs">Offer:</Label>
-                  <div className="col-span-3 text-sm font-medium">
-                    {offerTypeLabel[signupReward.offerType] || signupReward.offerType}
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-xs">Code:</Label>
-                  <div className="col-span-3 font-mono text-xs bg-white p-1 border rounded">
-                    {signupReward.discountCode}
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right text-xs">Status:</Label>
-                  <div className="col-span-3 flex items-center gap-2">
-                    <Button
-                      variant={signupReward.used ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={handleToggleSignupReward}
-                      disabled={isUpdating}
-                      className="h-7 px-3 text-xs"
-                    >
-                      {signupReward.used ? 'Used' : 'Unused'}
-                    </Button>
-                    <span className="text-[10px] text-muted-foreground">
-                      {signupReward.usedAt ? `Used: ${new Date(signupReward.usedAt).toLocaleDateString()}` : 'Click to mark as used'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground italic px-2">No signup reward claimed yet.</p>
-            )}
+          <div className="sticky top-0 bg-white pb-2 z-10">
+            <Input
+              placeholder="Search by coupon code or offer..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-9"
+            />
           </div>
 
-          {/* Additional Coupons Section */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold border-b pb-2">Spin Wheel Coupons</h3>
+          {/* Signup Reward Section */}
+          {(!searchQuery || showSignupReward) && (
             <div className="space-y-3">
-              {coupons && coupons.length > 0 ? (
-                coupons.map((coupon, index) => (
-                  <div key={index} className="grid gap-3 p-3 border rounded-lg bg-slate-50">
+              <h3 className="text-sm font-semibold border-b pb-2">Signup Reward</h3>
+              {signupReward && signupReward.claimed ? (
+                showSignupReward ? (
+                  <div className="grid gap-3 p-3 border rounded-lg bg-slate-50">
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label className="text-right text-xs">Offer:</Label>
                       <div className="col-span-3 text-sm font-medium">
-                        {offerTypeLabel[coupon.offerType] || coupon.offerType}
+                        {offerTypeLabel[signupReward.offerType] || signupReward.offerType}
                       </div>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label className="text-right text-xs">Code:</Label>
                       <div className="col-span-3 font-mono text-xs bg-white p-1 border rounded">
-                        {coupon.discountCode}
+                        {signupReward.discountCode}
                       </div>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label className="text-right text-xs">Status:</Label>
                       <div className="col-span-3 flex items-center gap-2">
                         <Button
-                          variant={coupon.used ? 'default' : 'outline'}
+                          variant={signupReward.used ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => handleToggleCoupon(index)}
+                          onClick={handleToggleSignupReward}
                           disabled={isUpdating}
                           className="h-7 px-3 text-xs"
                         >
-                          {coupon.used ? 'Used' : 'Unused'}
+                          {signupReward.used ? 'Used' : 'Unused'}
                         </Button>
                         <span className="text-[10px] text-muted-foreground">
-                          {coupon.usedAt ? `Used: ${new Date(coupon.usedAt).toLocaleDateString()}` : 'Click to mark as used'}
+                          {signupReward.usedAt ? `Used: ${new Date(signupReward.usedAt).toLocaleDateString()}` : 'Click to mark as used'}
                         </span>
                       </div>
                     </div>
                   </div>
-                )).reverse()
+                ) : null
               ) : (
-                <p className="text-xs text-muted-foreground italic px-2">No additional coupons found.</p>
+                !searchQuery && <p className="text-xs text-muted-foreground italic px-2">No signup reward claimed yet.</p>
               )}
             </div>
-          </div>
+          )}
+
+          {/* Additional Coupons Section */}
+          {(!searchQuery || filteredCoupons.length > 0) && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold border-b pb-2">Spin Wheel Coupons</h3>
+              <div className="space-y-3">
+                {filteredCoupons.length > 0 ? (
+                  filteredCoupons.map((coupon) => (
+                    <div key={coupon.originalIndex} className="grid gap-3 p-3 border rounded-lg bg-slate-50">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right text-xs">Offer:</Label>
+                        <div className="col-span-3 text-sm font-medium">
+                          {offerTypeLabel[coupon.offerType] || coupon.offerType}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right text-xs">Code:</Label>
+                        <div className="col-span-3 font-mono text-xs bg-white p-1 border rounded">
+                          {coupon.discountCode}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right text-xs">Status:</Label>
+                        <div className="col-span-3 flex items-center gap-2">
+                          <Button
+                            variant={coupon.used ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handleToggleCoupon(coupon.originalIndex)}
+                            disabled={isUpdating}
+                            className="h-7 px-3 text-xs"
+                          >
+                            {coupon.used ? 'Used' : 'Unused'}
+                          </Button>
+                          <span className="text-[10px] text-muted-foreground">
+                            {coupon.usedAt ? `Used: ${new Date(coupon.usedAt).toLocaleDateString()}` : 'Click to mark as used'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )).reverse()
+                ) : (
+                  !searchQuery && <p className="text-xs text-muted-foreground italic px-2">No additional coupons found.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {searchQuery && !showSignupReward && filteredCoupons.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              No coupons found matching "{searchQuery}"
+            </div>
+          )}
         </div>
 
         <DialogFooter className="pt-4 border-t">

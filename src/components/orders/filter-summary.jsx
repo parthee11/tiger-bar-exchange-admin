@@ -6,7 +6,6 @@ export function FilterSummary({
   loading,
   searchTerm,
   selectedBranch,
-  selectedStatus,
   startDate,
   endDate,
   filteredOrders,
@@ -14,7 +13,7 @@ export function FilterSummary({
   branches,
   handleRefresh
 }) {
-  const hasActiveFilters = searchTerm || selectedBranch || selectedStatus || startDate || endDate;
+  const hasActiveFilters = searchTerm || selectedBranch || startDate || endDate;
   
   if (!hasActiveFilters || loading) {
     return (
@@ -38,9 +37,6 @@ export function FilterSummary({
         {searchTerm && <span> (filtered by search)</span>}
         {selectedBranch && (
           <span> (filtered by branch: {branches.find(b => b._id === selectedBranch)?.name || 'Unknown'})</span>
-        )}
-        {selectedStatus && (
-          <span> (filtered by status: {selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)})</span>
         )}
         {(startDate || endDate) && (
           <span> (filtered by date: {startDate ? format(parseISO(startDate), 'MMM d, yyyy') : 'any'} to {endDate ? format(parseISO(endDate), 'MMM d, yyyy') : 'any'})</span>

@@ -84,7 +84,7 @@ const ordersApi = {
    */
   updateOrderStatus: async (id, status) => {
     try {
-      const response = await apiClient.patch(`/orders/${id}/status`, { status });
+      const response = await apiClient.put(`/orders/${id}/status`, { status });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -105,6 +105,21 @@ const ordersApi = {
     }
   },
   
+  /**
+   * Mark an order as paid (admin collect payment)
+   * @param {string} id - Order ID
+   * @param {string} paymentMethod - Payment method (cash, card)
+   * @returns {Promise} - Promise with updated order data
+   */
+  collectPayment: async (id, paymentMethod = 'cash') => {
+    try {
+      const response = await apiClient.put(`/orders/${id}/collect-payment`, { paymentMethod });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
   /**
    * Cancel an order
    * @param {string} id - Order ID

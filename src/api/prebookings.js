@@ -78,12 +78,14 @@ const prebookingsApi = {
   /**
    * Confirm a prebooking
    * @param {string} id - Prebooking ID
+   * @param {number} tableNumber - Table number to assign
    * @returns {Promise} - Promise with confirmed prebooking data
    */
-  confirmPrebooking: async (id) => {
+  confirmPrebooking: async (id, tableNumber) => {
     try {
       const response = await apiClient.put(`/pre-bookings/${id}/status`, {
-        status: 'confirmed'
+        status: 'confirmed',
+        tableNumber
       });
       return response.data;
     } catch (error) {

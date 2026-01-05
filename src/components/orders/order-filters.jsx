@@ -8,8 +8,6 @@ export function OrderFilters({
   setSearchTerm,
   selectedBranch,
   setSelectedBranch,
-  selectedStatus,
-  setSelectedStatus,
   startDate,
   setStartDate,
   endDate,
@@ -42,18 +40,6 @@ export function OrderFilters({
                 {branch.name}
               </SelectOption>
             ))}
-          </Select>
-        </div>
-        <div className="w-[150px]">
-          <Select 
-            value={selectedStatus} 
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full"
-          >
-            <SelectOption value="">All Statuses</SelectOption>
-            <SelectOption value="pending">Pending</SelectOption>
-            <SelectOption value="delivered">Delivered</SelectOption>
-            <SelectOption value="cancelled">Cancelled</SelectOption>
           </Select>
         </div>
         <div>

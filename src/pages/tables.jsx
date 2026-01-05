@@ -221,20 +221,21 @@ const TableManagement = () => {
     }
   };
 
-  const handleUpdateTableStatus = async () => {
-    if (!selectedTable) return;
+  const handleUpdateTableStatus = async (tableId, newStatus) => {
+    const idToUse = tableId || (selectedTable ? selectedTable._id : null);
+    if (!idToUse) return;
     setError(null);
 
     try {
       const response = await tablesApi.updateTableStatus(
         selectedBranch,
-        selectedTable._id,
-        tableStatus,
+        idToUse,
+        newStatus || tableStatus,
       );
 
       if (response.success) {
         fetchTables();
-        handleCloseEditDialog();
+        if (!tableId) handleCloseEditDialog();
         toast({
           variant: "success",
           title: "Success",
@@ -257,6 +258,11 @@ const TableManagement = () => {
         description: error.message || "Failed to update table status",
       });
     }
+  };
+
+  const handleClearTable = async (table) => {
+    // Just a shortcut to set status to available
+    await handleUpdateTableStatus(table._id, 'available');
   };
 
   const handleDeleteTable = async () => {
@@ -403,6 +409,7 @@ const TableManagement = () => {
             handleOpenEditDialog={handleOpenEditDialog}
             handleOpenDeleteDialog={handleOpenDeleteDialog}
             handleOpenAddDialog={handleOpenAddDialog}
+            handleClearTable={handleClearTable}
             indexOfFirstItem={indexOfFirstItem}
             indexOfLastItem={indexOfLastItem}
             totalPages={totalPages}

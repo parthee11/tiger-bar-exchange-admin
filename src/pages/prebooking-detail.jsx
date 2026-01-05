@@ -27,7 +27,13 @@ import { StatusBadge } from '../components/reservations/status-badge';
 import { ConfirmationModal } from '../components/ui/confirmation-modal';
 
 // Component for reservation details info
-const ReservationInfo = ({ prebooking, onConfirm, confirmLoading }) => {
+const ReservationInfo = ({ 
+  prebooking, 
+  onConfirm, 
+  confirmLoading, 
+  tableNumber, 
+  setTableNumber 
+}) => {
   // Prefer `preorderItems` if available; fallback to `items`
   const items =
     Array.isArray(prebooking?.preorderItems) &&
@@ -189,18 +195,36 @@ const ReservationInfo = ({ prebooking, onConfirm, confirmLoading }) => {
           )}
 
           {/* Actions — hide when there are preorder items */}
-          <div className="border-t pt-4 flex justify-end">
+          <div className="border-t pt-4 flex flex-col items-end space-y-4">
             {prebooking.status === "pending" && !hasPreorderItems && (
-              <Button
-                onClick={onConfirm}
-                disabled={confirmLoading}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {confirmLoading && (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <>
+                <div className="flex items-center space-x-2 w-full max-w-xs">
+                  <label htmlFor="tableNumber" className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                    Assign Table:
+                  </label>
+                  <input
+                    id="tableNumber"
+                    type="number"
+                    value={tableNumber}
+                    onChange={(e) => setTableNumber(e.target.value)}
+                    placeholder="Enter table #"
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+                <Button
+                  onClick={onConfirm}
+                  disabled={confirmLoading || !tableNumber}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {confirmLoading && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
+                  Confirm Reservation
+                </Button>
+                {!tableNumber && (
+                  <p className="text-xs text-red-500">Please assign a table number to confirm</p>
                 )}
-                Confirm Reservation
-              </Button>
+              </>
             )}
           </div>
         </div>
@@ -276,6 +300,7 @@ export function PrebookingDetail() {
   const [error, setError] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [tableNumber, setTableNumber] = useState('');
 
   // Fetch prebooking details on component mount
   useEffect(() => {
@@ -291,6 +316,9 @@ export function PrebookingDetail() {
       const response = await prebookingsApi.getPrebooking(id);
       if (response.success && response.data) {
         setPrebooking(response.data);
+        if (response.data.tableNumber) {
+          setTableNumber(response.data.tableNumber.toString());
+        }
       } else {
         setError('Failed to load reservation details');
         toast({
@@ -320,10 +348,18 @@ export function PrebookingDetail() {
   // Handle prebooking confirmation
   const handleConfirmPrebooking = async () => {
     if (!id) return;
+    if (!tableNumber) {
+      toast({
+        title: 'Error',
+        description: 'Please assign a table number',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setConfirmLoading(true);
     try {
-      const response = await prebookingsApi.confirmPrebooking(id);
+      const response = await prebookingsApi.confirmPrebooking(id, Number(tableNumber));
       if (response.success) {
         // Refresh the prebooking details
         fetchPrebookingDetails();
@@ -393,6 +429,8 @@ export function PrebookingDetail() {
             prebooking={prebooking}
             onConfirm={openConfirmModal}
             confirmLoading={confirmLoading}
+            tableNumber={tableNumber}
+            setTableNumber={setTableNumber}
           />
 
           {/* Customer Info */}
