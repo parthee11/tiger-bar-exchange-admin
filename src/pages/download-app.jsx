@@ -4,7 +4,7 @@ import { Download } from 'lucide-react';
 export function DownloadApp() {
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = '/tiger-bar-stock-exchange.apk';
+    link.href = 'https://github.com/parthee11/tiger-bar-exchange-admin/releases/download/1.0.0/tiger-bar-stock-exchange.apk';
     link.download = 'tiger-bar-stock-exchange.apk';
     document.body.appendChild(link);
     link.click();
