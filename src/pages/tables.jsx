@@ -159,6 +159,7 @@ const TableManagement = () => {
 
   const handleOpenEditDialog = (table) => {
     setSelectedTable(table);
+    setTableNumber(table.tableNumber);
     setTableStatus(table.status);
     setOpenEditDialog(true);
   };
@@ -166,6 +167,7 @@ const TableManagement = () => {
   const handleCloseEditDialog = () => {
     setOpenEditDialog(false);
     setSelectedTable(null);
+    setTableNumber('');
   };
 
   const handleOpenDeleteDialog = (table) => {
@@ -221,16 +223,28 @@ const TableManagement = () => {
     }
   };
 
-  const handleUpdateTableStatus = async (tableId, newStatus) => {
-    const idToUse = tableId || (selectedTable ? selectedTable._id : null);
+  const handleUpdateTable = async (tableId, newStatus) => {
+    // Check if tableId is actually a string ID and not a React event object
+    const actualTableId = typeof tableId === 'string' ? tableId : null;
+    const idToUse = actualTableId || (selectedTable ? selectedTable._id : null);
+    
     if (!idToUse) return;
     setError(null);
 
     try {
-      const response = await tablesApi.updateTableStatus(
+      const tableData = {
+        status: (typeof newStatus === 'string' ? newStatus : null) || tableStatus,
+      };
+
+      // Only add tableNumber if it's provided and we're in the edit dialog (no explicit tableId passed)
+      if (!actualTableId && tableNumber) {
+        tableData.tableNumber = tableNumber;
+      }
+
+      const response = await tablesApi.updateTable(
         selectedBranch,
         idToUse,
-        newStatus || tableStatus,
+        tableData
       );
 
       if (response.success) {
@@ -239,30 +253,30 @@ const TableManagement = () => {
         toast({
           variant: "success",
           title: "Success",
-          description: "Table status updated successfully",
+          description: "Table updated successfully",
         });
       } else {
-        setError(response.message || 'Failed to update table status');
+        setError(response.message || 'Failed to update table');
         toast({
           variant: "destructive",
           title: "Error",
-          description: response.message || "Failed to update table status",
+          description: response.message || "Failed to update table",
         });
       }
     } catch (error) {
-      console.error('Error updating table status:', error);
-      setError(error.message || 'Failed to update table status');
+      console.error('Error updating table:', error);
+      setError(error.message || 'Failed to update table');
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to update table status",
+        description: error.message || "Failed to update table",
       });
     }
   };
 
   const handleClearTable = async (table) => {
     // Just a shortcut to set status to available
-    await handleUpdateTableStatus(table._id, 'available');
+    await handleUpdateTable(table._id, 'available');
   };
 
   const handleDeleteTable = async () => {
@@ -436,8 +450,10 @@ const TableManagement = () => {
       <EditTableDialog
         open={openEditDialog}
         onClose={handleCloseEditDialog}
-        onUpdate={handleUpdateTableStatus}
+        onUpdate={handleUpdateTable}
         selectedTable={selectedTable}
+        tableNumber={tableNumber}
+        setTableNumber={setTableNumber}
         tableStatus={tableStatus}
         setTableStatus={setTableStatus}
         error={error}

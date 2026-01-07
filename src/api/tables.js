@@ -34,15 +34,15 @@ const tablesApi = {
   },
 
   /**
-   * Update table status
+   * Update table details
    * @param {string} branchId - Branch ID
    * @param {string} tableId - Table ID
-   * @param {string} status - New status ('available', 'occupied', 'reserved', 'maintenance')
+   * @param {Object} tableData - Updated table data (status, tableNumber, etc.)
    * @returns {Promise} - Promise with updated table data
    */
-  updateTableStatus: async (branchId, tableId, status) => {
+  updateTable: async (branchId, tableId, tableData) => {
     try {
-      const response = await apiClient.put(`/branches/${branchId}/tables/${tableId}`, { status });
+      const response = await apiClient.put(`/branches/${branchId}/tables/${tableId}`, tableData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

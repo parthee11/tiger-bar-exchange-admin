@@ -96,6 +96,8 @@ export const EditTableDialog = ({
   onClose, 
   onUpdate, 
   selectedTable, 
+  tableNumber,
+  setTableNumber,
   tableStatus, 
   setTableStatus, 
   error 
@@ -103,9 +105,9 @@ export const EditTableDialog = ({
   <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
     <DialogContent className="sm:max-w-[425px]">
       <DialogHeader>
-        <DialogTitle>Update Table Status</DialogTitle>
+        <DialogTitle>Update Table Details</DialogTitle>
         <DialogDescription>
-          Change the status of table {selectedTable?.tableNumber}.
+          Edit details for table {selectedTable?.tableNumber}.
         </DialogDescription>
         <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground" />
       </DialogHeader>
@@ -119,22 +121,42 @@ export const EditTableDialog = ({
         </div>
       )}
 
-      <div className="py-4">
-        <SelectDropdown
-          id="edit-status"
-          label="Status"
-          value={tableStatus}
-          onChange={(e) => setTableStatus(e.target.value)}
-          options={statusOptions}
-          className="w-full"
-        />
+      <div className="grid gap-4 py-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2 md:col-span-1">
+            <label
+              htmlFor="editTableNumber"
+              className="block text-sm font-medium mb-1"
+            >
+              Table Number<span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="editTableNumber"
+              type="text"
+              value={tableNumber}
+              onChange={(e) => setTableNumber(e.target.value)}
+              placeholder="e.g., T01"
+              className="w-full"
+            />
+          </div>
+          <div className="col-span-2 md:col-span-1">
+            <SelectDropdown
+              id="edit-status"
+              label="Status"
+              value={tableStatus}
+              onChange={(e) => setTableStatus(e.target.value)}
+              options={statusOptions}
+              className="w-full"
+            />
+          </div>
+        </div>
       </div>
 
       <DialogFooter>
         <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={onUpdate}>Update Status</Button>
+        <Button onClick={() => onUpdate()}>Update Table</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

@@ -18,7 +18,7 @@ export function Settings() {
       try {
         setLoyaltyLoading(true);
         const response = await settingsApi.getLoyaltyProgramEnabled();
-        const enabled = response.enabled !== undefined ? response.enabled : true;
+        const enabled = response.data !== undefined ? response.data : (response.enabled !== undefined ? response.enabled : true);
         setLoyaltyEnabled(enabled);
       } catch (error) {
         console.error("Error loading loyalty status:", error);
