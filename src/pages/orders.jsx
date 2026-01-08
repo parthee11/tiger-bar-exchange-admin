@@ -92,13 +92,31 @@ export function Orders() {
     // Also listen for status updates if they are broadcasted
     const removeStatusUpdateListener = socketService.addListener('order_status_updated', (updatedOrder) => {
       setOrders((prevOrders) => 
-        prevOrders.map((o) => o._id === updatedOrder._id ? { ...o, ...updatedOrder } : o)
+        prevOrders.map((o) => {
+          if (o._id === updatedOrder._id) {
+            // Preserve user object if the update only has user ID
+            const mergedUser = (typeof updatedOrder.user !== 'object' && typeof o.user === 'object') 
+              ? o.user 
+              : updatedOrder.user;
+            return { ...o, ...updatedOrder, user: mergedUser };
+          }
+          return o;
+        })
       );
     });
 
     const removeOrderCancelledListener = socketService.addListener('order_cancelled', (cancelledOrder) => {
       setOrders((prevOrders) => 
-        prevOrders.map((o) => o._id === cancelledOrder._id ? { ...o, ...cancelledOrder } : o)
+        prevOrders.map((o) => {
+          if (o._id === cancelledOrder._id) {
+            // Preserve user object if the update only has user ID
+            const mergedUser = (typeof cancelledOrder.user !== 'object' && typeof o.user === 'object') 
+              ? o.user 
+              : cancelledOrder.user;
+            return { ...o, ...cancelledOrder, user: mergedUser };
+          }
+          return o;
+        })
       );
     });
 
@@ -175,7 +193,9 @@ export function Orders() {
     );
 
     sortedOrders.forEach((order) => {
-      const key = `${order.branch}-${order.tableNumber}-${order.user._id}`;
+      const userId = typeof order.user === 'object' ? order.user?._id : order.user;
+      const branchId = typeof order.branch === 'object' ? order.branch?._id : order.branch;
+      const key = `${branchId}-${order.tableNumber}-${userId}`;
 
       const existingGroup = groups[key];
       const orderDate = new Date(order.createdAt);
@@ -198,6 +218,11 @@ export function Orders() {
         groups[key] = newGroup;
         grouped.push(newGroup);
       } else {
+        // If the current order has a more complete user object than the existing group, update it
+        if (typeof order.user === 'object' && typeof existingGroup.user !== 'object') {
+          existingGroup.user = order.user;
+        }
+        
         existingGroup.orderIds.push(order._id);
         existingGroup.totalAmount += order.totalAmount;
         existingGroup.items = [...existingGroup.items, ...order.items];
@@ -233,8 +258,9 @@ export function Orders() {
   // Filter grouped orders based on search term, branch, and date range
   const filteredGroupedOrders = allGroupedOrders.filter((group) => {
     // Search filter
+    const userName = typeof group.user === 'object' ? group.user?.name : '';
     const matchesSearch = searchTerm === '' ||
-      group.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (userName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       group._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (group.isGroup && group.orderIds.some((id) => id.toLowerCase().includes(searchTerm.toLowerCase()))) ||
       String(group.tableNumber).includes(searchTerm);

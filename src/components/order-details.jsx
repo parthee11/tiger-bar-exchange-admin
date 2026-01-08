@@ -233,11 +233,13 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollect
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
           <div>
             <h3 className="font-medium mb-2">Customer Information</h3>
-            {order.user ? (
+            {order.user && typeof order.user === 'object' ? (
               <>
                 <p><span className="text-muted-foreground">Name:</span> {order.user.name || 'N/A'}</p>
                 <p><span className="text-muted-foreground">Username:</span> {order.user.username || 'N/A'}</p>
               </>
+            ) : order.user ? (
+              <p><span className="text-muted-foreground">User ID:</span> {order.user}</p>
             ) : (
               <p className="text-sm text-muted-foreground">Customer information not available</p>
             )}

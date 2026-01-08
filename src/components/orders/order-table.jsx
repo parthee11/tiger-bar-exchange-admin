@@ -94,7 +94,9 @@ export function OrderTable({
                     <span>Table {order.tableNumber}</span>
                   </div>
                 </td>
-                <td className="p-3">{order.user.name}</td>
+                <td className="p-3">
+                  {typeof order.user === 'object' ? order.user.name : 'Customer'}
+                </td>
                 <td className="p-3">
                   {order.branch ?
                     branches.find((b) => b._id === order.branch)?.name || 'Unknown' :
