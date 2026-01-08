@@ -8,6 +8,7 @@ import { useToast } from '../components/ui/use-toast';
 import ordersApi from '../api/orders';
 import branchesApi from '../api/branches';
 import tablesApi from '../api/tables';
+import socketService from '../services/socketService';
 import { format, isAfter, isBefore, parseISO, startOfDay, endOfDay, differenceInHours } from 'date-fns';
 
 export function Orders() {
@@ -66,6 +67,46 @@ export function Orders() {
   // Initial data fetch
   useEffect(() => {
     fetchData();
+  }, []);
+
+  // Listen for real-time order updates
+  useEffect(() => {
+    // Listen for new orders
+    const removeOrderPlacedListener = socketService.addListener('order_placed', (newOrder) => {
+      console.log('New order received via socket:', newOrder);
+      
+      setOrders((prevOrders) => {
+        // Avoid duplicates
+        if (prevOrders.some((o) => o._id === newOrder._id)) {
+          return prevOrders;
+        }
+        return [newOrder, ...prevOrders];
+      });
+
+      toast({
+        title: 'New Order',
+        description: `New order from Table ${newOrder.tableNumber}`,
+      });
+    });
+
+    // Also listen for status updates if they are broadcasted
+    const removeStatusUpdateListener = socketService.addListener('order_status_updated', (updatedOrder) => {
+      setOrders((prevOrders) => 
+        prevOrders.map((o) => o._id === updatedOrder._id ? { ...o, ...updatedOrder } : o)
+      );
+    });
+
+    const removeOrderCancelledListener = socketService.addListener('order_cancelled', (cancelledOrder) => {
+      setOrders((prevOrders) => 
+        prevOrders.map((o) => o._id === cancelledOrder._id ? { ...o, ...cancelledOrder } : o)
+      );
+    });
+
+    return () => {
+      if (removeOrderPlacedListener) removeOrderPlacedListener();
+      if (removeStatusUpdateListener) removeStatusUpdateListener();
+      if (removeOrderCancelledListener) removeOrderCancelledListener();
+    };
   }, []);
 
   // Function to refresh orders data
@@ -224,7 +265,10 @@ export function Orders() {
       setLoading(true);
 
       // Check if all orders are paid and delivered
-      if (!group.allPaid || !group.allDelivered) {
+      const isPaid = group.isGroup ? group.allPaid : group.paymentStatus === 'paid';
+      const isDelivered = group.isGroup ? group.allDelivered : group.status === 'delivered';
+
+      if (!isPaid || !isDelivered) {
         toast({
           title: 'Cannot Close Table',
           description: 'All orders must be paid and delivered (or cancelled) before closing the table.',
@@ -237,17 +281,23 @@ export function Orders() {
       // 1. Find table ID to mark as available
       const branch = branches.find((b) => b._id === group.branch);
       if (branch && branch.tables) {
-        const table = branch.tables.find((t) => t.tableNumber === group.tableNumber);
+        const table = branch.tables.find((t) => String(t.tableNumber) === String(group.tableNumber));
         if (table) {
           await tablesApi.updateTableStatus(group.branch, table._id, 'available');
         }
       }
+
+      // 2. Mark all orders in the group as 'closed' in the backend
+      const orderIds = group.isGroup ? group.orderIds : [group._id];
+      const updateOrderPromises = orderIds.map((id) => ordersApi.updateOrderStatus(id, 'closed'));
+      await Promise.all(updateOrderPromises);
 
       toast({
         title: 'Table Closed',
         description: `Table ${group.tableNumber} has been closed and marked as available.`,
       });
 
+      // Refresh both orders and branches to update the UI
       await fetchData();
     } catch (error) {
       console.error('Error closing table:', error);

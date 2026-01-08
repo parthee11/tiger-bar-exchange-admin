@@ -15,11 +15,14 @@ import { format } from 'date-fns';
 import { X, Check, Clock, AlertTriangle, MapPin, CreditCard } from 'lucide-react';
 import branchesApi from '../api/branches';
 import { useToast } from './ui/use-toast';
+import { PaymentMethodModal } from './orders/PaymentMethodModal';
 
 export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollectPayment }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [branchInfo, setBranchInfo] = useState(null);
   const [branchLoading, setBranchLoading] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentData, setPaymentData] = useState({ id: null, updateGroup: false });
   const { toast } = useToast();
 
   // Fetch branch information when order changes
@@ -60,6 +63,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollect
   const getStatusVariant = (status) => {
     switch (status?.toLowerCase()) {
       case 'delivered':
+      case 'closed':
         return 'success';
       case 'pending':
         return 'warning';
@@ -89,6 +93,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollect
   const getStatusIcon = (status) => {
     switch (status.toLowerCase()) {
       case 'delivered':
+      case 'closed':
         return <Check className="h-4 w-4 mr-1" />;
       case 'pending':
         return <Clock className="h-4 w-4 mr-1" />;
@@ -127,13 +132,19 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollect
     }
   };
 
-  // Handle collect payment
-  const handleCollectPayment = async (targetId, paymentMethod = 'cash', updateGroup = false) => {
+  // Handle collect payment (open modal)
+  const handleCollectPayment = (targetId, updateGroup = false) => {
+    setPaymentData({ id: targetId, updateGroup });
+    setIsPaymentModalOpen(true);
+  };
+
+  const onSelectPaymentMethod = async (paymentMethod) => {
     try {
       setIsUpdating(true);
+      const { id, updateGroup } = paymentData;
 
       // Let the parent component handle the API call
-      await onCollectPayment(targetId, paymentMethod, updateGroup);
+      await onCollectPayment(id, paymentMethod, updateGroup);
 
       // Show success toast
       toast({
@@ -141,6 +152,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollect
         description: `Order marked as paid via ${paymentMethod}`,
         variant: 'success',
       });
+      setIsPaymentModalOpen(false);
     } catch (error) {
       console.error('Failed to collect payment:', error);
 
@@ -174,6 +186,21 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollect
   };
 
   const pendingBalance = calculatePendingBalance();
+
+  const isTableOccupied = () => {
+    if (!order || !branchInfo || !branchInfo.tables) return false;
+
+    const table = branchInfo.tables.find((t) => String(t.tableNumber) === String(order.tableNumber));
+    if (!table || table.status !== 'occupied') return false;
+
+    // Get order user ID safely
+    const orderUserId = typeof order.user === 'object' ? order.user._id : order.user;
+
+    // Check if table is occupied AND if it was occupied by the user associated with this order
+    const isOwner = !table.occupiedBy || String(table.occupiedBy) === String(orderUserId);
+
+    return isOwner;
+  };
 
   // If no order is provided or dialog is not open, don't render anything
   if (!order || !isOpen) return null;
@@ -240,7 +267,27 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollect
             <h3 className="font-medium mb-2">Order Information</h3>
             <p>
               <span className="text-muted-foreground">Order Status:</span>
-              {order.status ? (
+              {order.status === 'cancelled' ? (
+                <Badge variant="destructive" className="ml-2 inline-flex items-center">
+                  <X className="h-4 w-4 mr-1" />
+                  Cancelled
+                </Badge>
+              ) : order.status === 'closed' ? (
+                <Badge variant="secondary" className="ml-2 inline-flex items-center">
+                  <Check className="h-4 w-4 mr-1" />
+                  Closed
+                </Badge>
+              ) : isTableOccupied() ? (
+                <Badge variant="outline" className="ml-2 inline-flex items-center bg-blue-50 text-blue-600 border-blue-200">
+                  <Clock className="h-4 w-4 mr-1" />
+                  Table Open
+                </Badge>
+              ) : (order.allPaid && order.allDelivered) ? (
+                <Badge variant="secondary" className="ml-2 inline-flex items-center">
+                  <Check className="h-4 w-4 mr-1" />
+                  Closed
+                </Badge>
+              ) : order.status ? (
                 <Badge variant={getStatusVariant(order.status)} className="ml-2 inline-flex items-center">
                   {getStatusIcon(order.status)}
                   {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -336,7 +383,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollect
                         variant="outline"
                         size="xs"
                         className="h-7 text-[10px] px-2 border-primary text-primary hover:bg-primary hover:text-white"
-                        onClick={() => handleCollectPayment(subOrder._id, 'cash', false)}
+                        onClick={() => handleCollectPayment(subOrder._id, false)}
                         disabled={isUpdating}
                       >
                         <CreditCard className="h-3 w-3 mr-1" /> Collect Payment
@@ -455,7 +502,7 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollect
               <Button
                 variant="outline"
                 className="border-primary text-primary hover:bg-primary hover:text-white"
-                onClick={() => handleCollectPayment(order._id, 'cash', order.isGroup)}
+                onClick={() => handleCollectPayment(order._id, order.isGroup)}
                 disabled={isUpdating}
               >
                 <CreditCard className="h-4 w-4 mr-1" /> {isUpdating ? 'Processing...' : order.isGroup ? 'Collect All Payments' : 'Collect Payment'}
@@ -465,6 +512,13 @@ export function OrderDetails({ order, isOpen, onClose, onStatusChange, onCollect
           <Button variant="outline" onClick={onClose} disabled={isUpdating}>Close</Button>
         </DialogFooter>
       </DialogContent>
+
+      <PaymentMethodModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onSelectMethod={onSelectPaymentMethod}
+        isUpdating={isUpdating}
+      />
     </Dialog>
   );
 }
